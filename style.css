@@ -1,0 +1,63 @@
+*{
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body{
+    font-family: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial;
+    line-height: 1.5;
+    color: #111;
+    background: #f7f7fb;
+}
+
+header{
+    background: #083b66;
+    color: #fff;
+    padding: 1rem 2rem;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+}
+
+header h1{ font-size:1.25rem }
+
+nav a{ color: #fff; text-decoration:none; margin-left:1rem }
+
+.hero{
+    padding: 3.5rem 1rem;
+    background: linear-gradient(135deg,#2b6cb0 0%, #63b3ed 100%);
+    color: #fff;
+    text-align:center;
+}
+
+.hero-inner{ max-width:900px; margin:0 auto }
+
+.hero h2{ font-size:2rem; margin-bottom:0.5rem }
+.hero .announcement-text{ opacity:0.95; margin-bottom:1rem }
+
+.announcement-details{ list-style:none; display:inline-block; text-align:left; padding:0.5rem 1rem; border-radius:8px; background: rgba(255,255,255,0.06); }
+.announcement-details li{ margin:0.25rem 0 }
+
+.actions{ margin-top:1.25rem }
+.btn{
+    display:inline-block;
+    margin:0.25rem 0.5rem;
+    padding:0.6rem 1rem;
+    background: #fff;
+    color:#083b66;
+    text-decoration:none;
+    border-radius:6px;
+    font-weight:600;
+}
+
+.btn:hover{ opacity:0.9 }
+
+main{ padding:2rem }
+.voice-page{ max-width:900px; margin:0 auto }
+
+footer{ text-align:center; padding:1rem; color:#6b7280 }
+
+@media(min-width:700px){
+    .actions .btn{ padding:0.8rem 1.1rem }
+}
