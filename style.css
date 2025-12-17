@@ -61,3 +61,10 @@ footer{ text-align:center; padding:1rem; color:#6b7280 }
 @media(min-width:700px){
     .actions .btn{ padding:0.8rem 1.1rem }
 }
+
+.video-container video {
+    width: 100%;
+    height: auto;
+    /* Optional: Ensure it never exceeds its original size on large screens */
+    max-width: 100%; 
+}
