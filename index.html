@@ -15,6 +15,7 @@
             <a href="alto.html">Alto</a>
             <a href="tenor.html">Tenor</a>
             <a href="bass.html">Bass</a>
+            <a href="#" id="admin-link">Admin</a>
         </nav>
     </header>
     <main>
@@ -46,5 +47,48 @@
         <p>&copy; DLL Music & Arts | Joshua Agawin</p>
     </footer>
 
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="login-form">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Panel</h2>
+            <form id="admin-form">
+                <label for="announce-date">Date:</label>
+                <input type="text" id="announce-date-input" value="December 20, 2025">
+
+                <label for="announce-event">Event:</label>
+                <input type="text" id="announce-event-input" value="SM World Chorale Day">
+
+                <label for="announce-time">Time:</label>
+                <input type="text" id="announce-time-input" value="10 AM | 1 PM - 4 PM for the Main Event">
+
+                <label for="announce-where">Where:</label>
+                <input type="text" id="announce-where-input" value="School for preparation and SM for the main venue">
+
+                <label for="announce-dress">What to wear:</label>
+                <input type="text" id="announce-dress-input" value="">
+
+                <label for="announce-song">Songs:</label>
+                <input type="text" id="announce-song-input" value="O-nata lux & Pasko sa bayan">
+
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
 </body>
 </html>

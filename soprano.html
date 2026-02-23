@@ -11,6 +11,7 @@
         <h1>Soprano</h1>
         <nav class="sub-nav">
             <a href="index.html">Home</a>
+            <a href="#" id="admin-link">Admin</a>
         </nav>
     </header>
     <main class="voice-page">
@@ -65,5 +66,38 @@ Tui beati corporis</p>
     <footer>
         <p>&copy; DLL Music & Arts | Joshua Agawin</p>
     </footer>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="login-form">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Panel - Soprano Songs</h2>
+            <form id="admin-form">
+                <label for="soprano1-video">Soprano 1 O Nata Lux Video URL:</label>
+                <input type="text" id="soprano1-video" value="songs/soprano1_o-nata-lux.mp4">
+
+                <label for="soprano2-video">Soprano 2 O Nata Lux Video URL:</label>
+                <input type="text" id="soprano2-video" value="songs/soprano2_o-nata-lux.mp4">
+
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script src="songs-admin.js"></script>
 </body>
 </html>

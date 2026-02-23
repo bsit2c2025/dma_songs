@@ -11,6 +11,7 @@
         <h1>Alto</h1>
         <nav class="sub-nav">
             <a href="index.html">Home</a>
+            <a href="#" id="admin-link">Admin</a>
         </nav>
     </header>
     <main class="voice-page">
@@ -66,5 +67,32 @@ Tui beati corporis</p>
     <footer>
         <p>&copy; DLL Music & Arts | Joshua Agawin</p>
     </footer>
+
+    <!-- Admin Login Modal -->
+    <div id="admin-login-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Login</h2>
+            <form id="login-form">
+                <label for="password">Password:</label>
+                <input type="password" id="password" required>
+                <button type="submit">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel Modal -->
+    <div id="admin-panel-modal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2>Admin Panel - Alto Songs</h2>
+            <form id="admin-form">
+                <button type="submit">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <script src="admin.js"></script>
+    <script src="songs-admin.js"></script>
 </body>
 </html>
