@@ -119,17 +119,53 @@ function saveAnnouncementData() {
         dress: dressInput.value,
         song: songInput.value
     };
-    localStorage.setItem('announcementData', JSON.stringify(data));
+
+    fetch('/api/announcement', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': 'Bearer admin123'
+        },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            alert('Changes saved!');
+        } else {
+            alert('Failed to save: ' + result.error);
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        // Fallback to localStorage
+        localStorage.setItem('announcementData', JSON.stringify(data));
+        alert('Saved locally (server not available)');
+    });
 }
 
 function loadAnnouncementData() {
-    const data = JSON.parse(localStorage.getItem('announcementData'));
-    if (data) {
+    fetch('/api/announcement')
+    .then(response => response.json())
+    .then(data => {
         announceDate.textContent = data.date;
         announceEvent.textContent = data.event;
         announceTime.textContent = data.time;
         announceWhere.textContent = data.where;
         announceDress.textContent = data.dress;
         announceSong.textContent = data.song;
-    }
+    })
+    .catch(error => {
+        console.error('Error loading from server:', error);
+        // Fallback to localStorage
+        const localData = JSON.parse(localStorage.getItem('announcementData'));
+        if (localData) {
+            announceDate.textContent = localData.date;
+            announceEvent.textContent = localData.event;
+            announceTime.textContent = localData.time;
+            announceWhere.textContent = localData.where;
+            announceDress.textContent = localData.dress;
+            announceSong.textContent = localData.song;
+        }
+    });
 }
