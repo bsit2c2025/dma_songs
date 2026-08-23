@@ -1,5 +1,5 @@
 import * as React from "react";
-import { Slot } from "@radix-ui/react-slot";
+import { Slot, Slottable } from "@radix-ui/react-slot";
 import { cva, type VariantProps } from "class-variance-authority";
 import { Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -42,12 +42,17 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <Comp
         className={cn(buttonVariants({ variant, size, className }))}
         ref={ref}
-        disabled={disabled || loading}
+        // `disabled` is not a valid attribute on the <a> that asChild usually
+        // renders, so it is only set when this really is a <button>.
+        disabled={asChild ? undefined : disabled || loading}
+        aria-disabled={asChild && (disabled || loading) ? true : undefined}
         aria-busy={loading || undefined}
         {...props}
       >
-        {loading && !asChild ? <Loader2 className="animate-spin" aria-hidden /> : null}
-        {children}
+        {loading ? <Loader2 className="animate-spin" aria-hidden /> : null}
+        {/* Slottable marks which child Slot should merge into, so a spinner can
+            sit alongside the child without Slot seeing two elements. */}
+        <Slottable>{children}</Slottable>
       </Comp>
     );
   },
