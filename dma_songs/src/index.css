@@ -1,0 +1,92 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Ink & paper -------------------------------------------------------- */
+    --background: 220 14% 96%;
+    --foreground: 228 28% 9%;
+    --card: 0 0% 100%;
+    --card-foreground: 228 28% 9%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 228 28% 9%;
+
+    /* DLL Music and Arts brand ------------------------------------------- */
+    --primary: 235 48% 28%; /* deep choral indigo */
+    --primary-foreground: 40 30% 97%;
+    --brass: 38 61% 47%; /* brass / medal accent */
+    --brass-foreground: 228 28% 9%;
+
+    --secondary: 228 20% 92%;
+    --secondary-foreground: 235 48% 24%;
+    --muted: 228 18% 93%;
+    --muted-foreground: 228 10% 42%;
+    --accent: 228 24% 90%;
+    --accent-foreground: 235 48% 24%;
+    --destructive: 0 68% 44%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 228 16% 86%;
+    --input: 228 16% 84%;
+    --ring: 235 48% 38%;
+    --radius: 0.65rem;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-feature-settings: "cv02", "cv03", "cv04";
+  }
+
+  :focus-visible {
+    @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
+  }
+
+  h1, h2, h3 {
+    @apply font-display font-normal tracking-tight;
+  }
+}
+
+@layer components {
+  /* Signature motif: a four-line musical stave used behind section headings
+     and around the voice-part selector. Purely decorative, aria-hidden. */
+  .stave {
+    background-image: repeating-linear-gradient(
+      to bottom,
+      hsl(var(--border)) 0 1px,
+      transparent 1px 9px
+    );
+  }
+
+  .prose-announcement {
+    @apply text-[15px] leading-relaxed text-foreground/90;
+  }
+  .prose-announcement p { @apply my-2; }
+  .prose-announcement strong { @apply font-semibold; }
+  .prose-announcement em { @apply italic; }
+  .prose-announcement a { @apply text-primary underline underline-offset-2; }
+  .prose-announcement ul { @apply my-2 list-disc pl-5; }
+  .prose-announcement ol { @apply my-2 list-decimal pl-5; }
+  .prose-announcement h2 { @apply mt-3 font-display text-xl; }
+  .prose-announcement h3 { @apply mt-3 font-display text-lg; }
+  .prose-announcement blockquote { @apply my-2 border-l-2 border-brass pl-3 italic; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
