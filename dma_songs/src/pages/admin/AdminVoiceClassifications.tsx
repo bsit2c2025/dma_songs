@@ -1,7 +1,7 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { transformingResolver } from "@/lib/form";
 import { Pencil, Plus, Trash2, Waves } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -25,7 +25,9 @@ import {
   createVoiceClassification, deleteVoiceClassification, updateVoiceClassification, voicePartUsage,
 } from "@/services/voiceClassifications";
 import {
-  voiceClassificationFormSchema, type VoiceClassificationFormValues,
+  voiceClassificationFormSchema,
+  type VoiceClassificationFormOutput,
+  type VoiceClassificationFormValues,
 } from "@/schemas/voiceClassification";
 import { errorMessage } from "@/lib/errors";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -54,8 +56,12 @@ export default function AdminVoiceClassifications() {
     enabled: Boolean(pendingDelete),
   });
 
-  const form = useForm<VoiceClassificationFormValues>({
-    resolver: zodResolver(voiceClassificationFormSchema),
+  const form = useForm<
+    VoiceClassificationFormValues,
+    unknown,
+    VoiceClassificationFormOutput
+  >({
+    resolver: transformingResolver(voiceClassificationFormSchema),
     defaultValues: EMPTY,
   });
 
@@ -83,10 +89,8 @@ export default function AdminVoiceClassifications() {
   };
 
   const save = useMutation({
-    mutationFn: (values: VoiceClassificationFormValues) => {
-      const parsed = voiceClassificationFormSchema.parse(values);
-      return editing ? updateVoiceClassification(editing.id, parsed) : createVoiceClassification(parsed);
-    },
+    mutationFn: (values: VoiceClassificationFormOutput) =>
+      editing ? updateVoiceClassification(editing.id, values) : createVoiceClassification(values),
     onSuccess: () => {
       invalidate();
       toast.success(editing ? "Voice part saved" : "Voice part added");

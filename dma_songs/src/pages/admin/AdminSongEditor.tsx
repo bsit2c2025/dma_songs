@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useFieldArray, useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { transformingResolver } from "@/lib/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Eye, Plus, Trash2, Video } from "lucide-react";
 import { toast } from "sonner";
@@ -23,7 +23,7 @@ import {
 import { useSong } from "@/hooks/useSongs";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
 import { saveSong } from "@/services/songs";
-import { songFormSchema, type SongFormValues } from "@/schemas/song";
+import { songFormSchema, type SongFormOutput, type SongFormValues } from "@/schemas/song";
 import { extractYouTubeId, thumbnailFromVideoId } from "@/lib/youtube";
 import { errorMessage } from "@/lib/errors";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -54,8 +54,12 @@ export default function AdminSongEditor() {
   const existing = useSong(id);
   useDocumentTitle(isEdit ? "Edit song" : "Add song");
 
-  const form = useForm<SongFormValues>({
-    resolver: zodResolver(songFormSchema),
+  // The third generic is the schema's OUTPUT type. With a resolver, react-hook-form
+  // hands the *transformed* values to handleSubmit — empty strings have already
+  // become nulls. Re-parsing them would fail, because `null` is not valid input
+  // to a schema that produces `null`.
+  const form = useForm<SongFormValues, unknown, SongFormOutput>({
+    resolver: transformingResolver(songFormSchema),
     defaultValues: EMPTY,
     mode: "onBlur",
   });
@@ -88,8 +92,7 @@ export default function AdminSongEditor() {
   }, [existing.data]);
 
   const save = useMutation({
-    mutationFn: (values: SongFormValues) =>
-      saveSong(songFormSchema.parse(values), id),
+    mutationFn: (values: SongFormOutput) => saveSong(values, id),
     onSuccess: (savedId) => {
       queryClient.invalidateQueries({ queryKey: ["admin", "songs"] });
       queryClient.invalidateQueries({ queryKey: ["songs"] });

@@ -12,7 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Field } from "@/components/common/Field";
-import { VoicePartSelector } from "@/components/common/VoicePartSelector";
+import { VoicePartPicker } from "@/components/common/VoicePartPicker";
+import { VoiceRequestHistory } from "@/components/common/VoiceRequestHistory";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useVoicePart } from "@/features/voice/VoicePartProvider";
 import { updateOwnProfile } from "@/services/members";
@@ -26,7 +27,7 @@ import { queryKeys } from "@/lib/queryKeys";
 export default function Profile() {
   useDocumentTitle("Your profile");
   const { user, profile, isAdmin, refreshProfile } = useAuth();
-  const { selected } = useVoicePart();
+  const { myPart, pendingRequest } = useVoicePart();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -109,13 +110,16 @@ export default function Profile() {
         <CardHeader>
           <CardTitle>Your voice part</CardTitle>
           <CardDescription>
-            {selected
-              ? `The library is filtered to ${selected.name}. Choosing a different part updates it everywhere.`
-              : "Pick a part and the library will only show the music arranged for it."}
+            {myPart
+              ? pendingRequest
+                ? `You sing ${myPart.name}. A move to ${pendingRequest.requested?.name ?? "another part"} is waiting for approval.`
+                : `You sing ${myPart.name}. Moving to a different section needs an administrator's approval — you can still browse every part's music.`
+              : "Pick the part you sing. Your first choice is applied straight away."}
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <VoicePartSelector />
+        <CardContent className="space-y-6">
+          <VoicePartPicker />
+          <VoiceRequestHistory />
         </CardContent>
       </Card>
 

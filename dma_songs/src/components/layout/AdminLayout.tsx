@@ -1,9 +1,10 @@
 import * as React from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity, ChevronLeft, LayoutDashboard, LogOut, Megaphone, Menu, Music4,
+  Activity, ChevronLeft, Inbox, LayoutDashboard, LogOut, Megaphone, Menu, Music4,
   Settings, Users, Waves, X, UserRound,
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
 import { Logo } from "@/components/layout/Logo";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -11,6 +12,8 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { signOut } from "@/services/auth";
 import { logAdminEvent } from "@/services/activity";
+import { pendingVoiceRequestCount } from "@/services/voiceRequests";
+import { queryKeys } from "@/lib/queryKeys";
 import { cn, initials } from "@/lib/utils";
 import { toast } from "sonner";
 
@@ -30,6 +33,13 @@ const SECTIONS = [
     label: "People",
     items: [
       { to: "/admin/users", label: "Members", icon: Users, end: false },
+      {
+        to: "/admin/voice-requests",
+        label: "Voice requests",
+        icon: Inbox,
+        end: false,
+        badge: "voiceRequests" as const,
+      },
       { to: "/admin/voice-classifications", label: "Voice parts", icon: Waves, end: false },
     ],
   },
@@ -43,6 +53,16 @@ const SECTIONS = [
 ] as const;
 
 function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
+  // Polled rather than pushed: a queue that quietly fills up is worse than a
+  // slightly stale number, and a count every half minute costs nothing.
+  const pending = useQuery({
+    queryKey: queryKeys.pendingVoiceRequests,
+    queryFn: pendingVoiceRequestCount,
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+  const pendingCount = pending.data ?? 0;
+
   return (
     <nav className="flex flex-col gap-6 p-4" aria-label="Dashboard">
       {SECTIONS.map((section, index) => (
@@ -68,7 +88,15 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
               }
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden />
-              {item.label}
+              <span className="flex-1">{item.label}</span>
+              {"badge" in item && item.badge === "voiceRequests" && pendingCount > 0 ? (
+                <span
+                  className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brass px-1.5 text-[0.7rem] font-bold text-brass-foreground"
+                  aria-label={`${pendingCount} waiting for a decision`}
+                >
+                  {pendingCount > 99 ? "99+" : pendingCount}
+                </span>
+              ) : null}
             </NavLink>
           ))}
         </div>

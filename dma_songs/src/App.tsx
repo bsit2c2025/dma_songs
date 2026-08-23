@@ -31,6 +31,7 @@ const AdminSongEditor = React.lazy(() => import("@/pages/admin/AdminSongEditor")
 const AdminAnnouncements = React.lazy(() => import("@/pages/admin/AdminAnnouncements"));
 const AdminAnnouncementEditor = React.lazy(() => import("@/pages/admin/AdminAnnouncementEditor"));
 const AdminUsers = React.lazy(() => import("@/pages/admin/AdminUsers"));
+const AdminVoiceRequests = React.lazy(() => import("@/pages/admin/AdminVoiceRequests"));
 const AdminVoiceClassifications = React.lazy(() => import("@/pages/admin/AdminVoiceClassifications"));
 const AdminSettings = React.lazy(() => import("@/pages/admin/AdminSettings"));
 const AdminActivity = React.lazy(() => import("@/pages/admin/AdminActivity"));
@@ -89,6 +90,7 @@ export default function App() {
                       <Route path="announcements/new" element={<AdminAnnouncementEditor />} />
                       <Route path="announcements/:id/edit" element={<AdminAnnouncementEditor />} />
                       <Route path="users" element={<AdminUsers />} />
+                      <Route path="voice-requests" element={<AdminVoiceRequests />} />
                       <Route path="voice-classifications" element={<AdminVoiceClassifications />} />
                       <Route path="settings" element={<AdminSettings />} />
                       <Route path="activity" element={<AdminActivity />} />

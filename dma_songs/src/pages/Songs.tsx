@@ -7,7 +7,7 @@ import { SongCard, SongCardSkeleton } from "@/components/common/SongCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Pagination } from "@/components/common/Pagination";
-import { VoicePartSelector } from "@/components/common/VoicePartSelector";
+import { VoicePartFilter } from "@/components/common/VoicePartFilter";
 import { Button } from "@/components/ui/button";
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
@@ -23,7 +23,7 @@ import { SONG_SORTS, type SongSort } from "@/lib/constants";
 const ALL = "__all__";
 
 export default function Songs() {
-  const { selected, selectedId } = useVoicePart();
+  const { myPart, parts } = useVoicePart();
   const { data: settings } = useSettings();
   const pageSize = settingNumber(settings, "songs.page_size", 12);
   const [params, setParams] = useSearchParams();
@@ -32,18 +32,23 @@ export default function Songs() {
   const debouncedSearch = useDebouncedValue(search, 300);
   const sort = (params.get("sort") as SongSort) ?? "recent";
   const category = params.get("category");
+  // The library filter lives in the URL and defaults to every part, so a
+  // shared link shows the same thing to whoever opens it. It is not the same
+  // idea as the member's own section.
+  const partFilter = params.get("part");
+  const filtered = parts.find((part) => part.id === partFilter) ?? null;
   const page = Number(params.get("page") ?? 1);
   const [filtersOpen, setFiltersOpen] = React.useState(false);
 
   useDocumentTitle(
-    selected ? `Songs for ${selected.name}` : "Song library",
+    filtered ? `Songs for ${filtered.name}` : "Song library",
     "Practice material for the DLL Music and Arts ensemble, filtered by voice part.",
   );
 
   const categories = useSongCategories();
   const query = useSongs({
     search: debouncedSearch,
-    voiceClassificationId: selectedId,
+    voiceClassificationId: partFilter,
     category,
     sort,
     page,
@@ -72,7 +77,7 @@ export default function Songs() {
   React.useEffect(() => {
     if (page !== 1) update({ page: null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedId]);
+  }, [partFilter]);
 
   const total = query.data?.total ?? 0;
 
@@ -80,31 +85,13 @@ export default function Songs() {
     <div className="space-y-6">
       <PageHeader
         eyebrow="Song library"
-        title={selected ? `Songs for ${selected.name}` : "Every song"}
+        title={filtered ? `Songs for ${filtered.name}` : "Every song"}
         description={
-          selected
-            ? "Only the music arranged for your part, with your practice video where one exists."
-            : "Pick a voice part to narrow this down to the music written for your line."
+          filtered
+            ? "Only the music arranged for this part, with its practice video where one exists."
+            : "Everything in the library. Narrow it to a single part with the filter below."
         }
       />
-
-      <div className="rounded-lg border border-border bg-card p-4">
-        <div className="flex items-center justify-between gap-3">
-          <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-muted-foreground">Your voice part</h2>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="sm:hidden"
-            onClick={() => setFiltersOpen((open) => !open)}
-            aria-expanded={filtersOpen}
-          >
-            <SlidersHorizontal aria-hidden /> Filters
-          </Button>
-        </div>
-        <div className="mt-3">
-          <VoicePartSelector compact />
-        </div>
-      </div>
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput
@@ -115,7 +102,22 @@ export default function Songs() {
           placeholder="Search songs by title…"
           className="flex-1"
         />
+        <Button
+          variant="outline"
+          size="default"
+          className="sm:hidden"
+          onClick={() => setFiltersOpen((open) => !open)}
+          aria-expanded={filtersOpen}
+        >
+          <SlidersHorizontal aria-hidden /> Filters
+        </Button>
         <div className={filtersOpen ? "flex flex-col gap-3 sm:flex-row" : "hidden gap-3 sm:flex"}>
+          <VoicePartFilter
+            value={partFilter}
+            onChange={(value) => update({ part: value })}
+            className="w-full sm:w-52"
+          />
+
           <Select
             value={category ?? ALL}
             onValueChange={(value) => update({ category: value === ALL ? null : value })}
@@ -160,12 +162,12 @@ export default function Songs() {
         <>
           <p className="text-sm text-muted-foreground" role="status">
             {total} {total === 1 ? "song" : "songs"}
-            {selected ? ` for ${selected.name}` : ""}
+            {filtered ? ` for ${filtered.name}` : ""}
             {debouncedSearch ? ` matching "${debouncedSearch}"` : ""}
           </p>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {query.data.rows.map((song) => (
-              <SongCard key={song.id} song={song} selectedPartId={selectedId} />
+              <SongCard key={song.id} song={song} selectedPartId={partFilter ?? myPart?.id ?? null} />
             ))}
           </div>
           <Pagination
@@ -191,8 +193,8 @@ export default function Songs() {
         <EmptyState
           icon={<Music4 />}
           title={
-            selected
-              ? `No songs are currently available for ${selected.name}.`
+            filtered
+              ? `No songs are currently available for ${filtered.name}.`
               : "No songs are available yet."
           }
           description="New material appears here as it is added for rehearsal."

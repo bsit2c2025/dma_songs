@@ -17,3 +17,4 @@ export const settingsFormSchema = z.object({
 });
 
 export type SettingsFormValues = z.input<typeof settingsFormSchema>;
+export type SettingsFormOutput = z.output<typeof settingsFormSchema>;

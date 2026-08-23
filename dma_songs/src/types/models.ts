@@ -53,3 +53,27 @@ export interface Paginated<T> {
 }
 
 export type SettingsMap = Record<string, Json>;
+
+export type VoiceChangeRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
+
+export interface VoiceChangeRequest {
+  id: string;
+  user_id: string;
+  requested_voice_id: string;
+  current_voice_id: string | null;
+  status: VoiceChangeRequestStatus;
+  note: string | null;
+  decision_note: string | null;
+  decided_by: string | null;
+  decided_at: string | null;
+  created_at: string;
+  updated_at: string;
+  requested: VoiceClassification | null;
+  current: VoiceClassification | null;
+  profile: {
+    id: string;
+    display_name: string;
+    email: string | null;
+    avatar_url: string | null;
+  } | null;
+}

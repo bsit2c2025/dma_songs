@@ -24,6 +24,7 @@ const RESOURCE_TYPES = [
   { value: "announcement", label: "Announcements" },
   { value: "user", label: "Members" },
   { value: "voice_classification", label: "Voice parts" },
+  { value: "voice_request", label: "Voice part requests" },
   { value: "setting", label: "Settings" },
   { value: "auth", label: "Sign-ins" },
 ];

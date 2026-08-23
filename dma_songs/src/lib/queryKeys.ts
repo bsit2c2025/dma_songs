@@ -13,4 +13,7 @@ export const queryKeys = {
   dashboard: ["admin", "dashboard"] as const,
   profile: (id: string | undefined) => ["profile", id] as const,
   categories: ["song-categories"] as const,
+  voiceRequests: (params: unknown) => ["admin", "voice-requests", params] as const,
+  myVoiceRequest: (userId: string) => ["voice-request", "mine", userId] as const,
+  pendingVoiceRequests: ["admin", "voice-requests", "count"] as const,
 };

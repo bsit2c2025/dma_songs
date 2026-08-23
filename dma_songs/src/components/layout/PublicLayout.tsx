@@ -19,7 +19,7 @@ const NAV = [
 
 export function PublicLayout() {
   const { status, profile, isAdmin } = useAuth();
-  const { selected } = useVoicePart();
+  const { myPart } = useVoicePart();
   const { data: settings } = useSettings();
   const [menuOpen, setMenuOpen] = React.useState(false);
   const location = useLocation();
@@ -60,9 +60,9 @@ export function PublicLayout() {
           </nav>
 
           <div className="flex items-center gap-2">
-            {selected ? (
-              <Link to="/songs" className="hidden sm:block" aria-label={`Your part: ${selected.name}. Browse songs.`}>
-                <VoicePartChip part={selected} size="md" />
+            {myPart ? (
+              <Link to="/songs" className="hidden sm:block" aria-label={`Your part: ${myPart.name}. Browse songs.`}>
+                <VoicePartChip part={myPart} size="md" />
               </Link>
             ) : null}
 

@@ -1,4 +1,4 @@
-import { env } from "@/lib/env";
+import { ZodError } from "zod";
 
 /**
  * Database errors can leak schema details, so ordinary users get a plain
@@ -23,7 +23,18 @@ export interface AppError {
 }
 
 export function toAppError(error: unknown, fallback = "Something went wrong. Try again."): AppError {
-  if (env.isDev) console.error("[dma_songs]", error);
+  // Always logged, not only in development. A production failure that leaves
+  // no trace anywhere is the hardest kind to report and the hardest to fix.
+  console.error("[dma_songs]", error);
+
+  // A validation error that reaches this point is a bug in our own code, not
+  // something the user did — the form resolver should already have caught it.
+  // Naming the field beats "Something went wrong".
+  if (error instanceof ZodError) {
+    const first = error.issues[0];
+    const where = first?.path.length ? first.path.join(".") : "form";
+    return { message: `${where}: ${first?.message ?? "invalid value"}`, code: "validation" };
+  }
 
   if (error && typeof error === "object") {
     const e = error as { code?: string; message?: string; details?: string; hint?: string };
@@ -38,6 +49,12 @@ export function toAppError(error: unknown, fallback = "Something went wrong. Try
     if (e.message && FRIENDLY[e.message]) return { message: FRIENDLY[e.message], code };
     if (e.message?.includes("Failed to fetch")) {
       return { message: "Can't reach the server. Check your connection and try again.", code };
+    }
+
+    // Nothing matched. Rather than swallow it, append the raw message to the
+    // fallback so a screenshot is enough to diagnose the problem.
+    if (e.message) {
+      return { message: `${fallback} (${[code, e.message].filter(Boolean).join(": ")})`, code };
     }
   }
   return { message: fallback };

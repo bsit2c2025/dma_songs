@@ -109,6 +109,8 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0004_storage.sql` | Four storage buckets and their access rules |
 | `0005_seed_reference_data.sql` | The eight voice parts and default settings |
 | `0006_song_write_rpc.sql` | The transactional song-save function |
+| `0007_grants.sql` | Table privileges for the `anon` and `authenticated` roles |
+| `0008_voice_change_requests.sql` | Admin-approved voice part changes |
 
 Each file is safe to re-run.
 
@@ -318,6 +320,15 @@ orders the rest.
 email and logo all live in the database, so no redeploy is needed. Upload the logo there or drop the
 file at `public/logo.svg`.
 
+**Voice part changes.** A member's *first* choice applies immediately — nothing to approve. Any move
+afterwards becomes a request that waits in Admin → Voice requests, where the sidebar carries a count
+of what's outstanding. Approving moves the member straight away; declining lets you write a reason,
+which they see on their profile. The rule is enforced by a database trigger, not the interface: once
+a member's part is set, that column is read-only to them.
+
+Members are never restricted to their own part's music — the library filter is separate and defaults
+to showing everything.
+
 **Adding a voice part.** Admin → Voice parts. Order controls where it appears everywhere; colour
 flows into chips, tabs and dashboard bars. Hiding a part removes it from the picker without touching
 the songs assigned to it.
@@ -340,6 +351,12 @@ order; both are idempotent.
 
 **Images upload but don't appear.** Check the bucket exists and is public under Supabase → Storage. A
 failed `0004_storage.sql` is the usual cause.
+
+**Everything loads but every list is empty, and a promoted admin still gets "access denied".**
+The `anon` and `authenticated` roles are missing SELECT on the tables. Postgres checks the table
+grant *before* it consults an RLS policy, so without it every query succeeds and returns nothing.
+Run `0007_grants.sql`, then `supabase/diagnose.sql` to confirm — check 03 lists the privileges each
+role actually holds.
 
 **Row Level Security errors when saving.** Confirm you're signed in as an administrator and that
 `0003_rls_policies.sql` ran. `select public.is_admin(auth.uid());` in the SQL editor tells you what

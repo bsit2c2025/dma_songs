@@ -1,18 +1,35 @@
 import * as React from "react";
-import { useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
 import { updateOwnProfile } from "@/services/members";
+import {
+  cancelVoiceChangeRequest,
+  getMyPendingRequest,
+  requestVoiceChange,
+} from "@/services/voiceRequests";
 import { queryKeys } from "@/lib/queryKeys";
-import type { VoiceClassification } from "@/types/models";
+import { errorMessage } from "@/lib/errors";
+import type { VoiceChangeRequest, VoiceClassification } from "@/types/models";
 
 interface VoicePartState {
   parts: VoiceClassification[];
-  selected: VoiceClassification | null;
-  selectedId: string | null;
+  /** The part this person actually sings — their section, not a filter. */
+  myPart: VoiceClassification | null;
+  myPartId: string | null;
+  /** True when the member has never chosen, so the next pick is free. */
+  isFirstChoice: boolean;
+  pendingRequest: VoiceChangeRequest | null;
   isLoading: boolean;
-  select: (id: string | null) => void;
+  isSubmitting: boolean;
+  /**
+   * Guests and first-time members are applied immediately; an established
+   * member's change becomes a request for an administrator.
+   */
+  choosePart: (id: string, note?: string) => Promise<void>;
+  cancelRequest: () => Promise<void>;
   clear: () => void;
 }
 
@@ -36,67 +53,120 @@ function writeStored(id: string | null) {
 }
 
 /**
- * The selected voice part is a content preference, not a permission. Guests
- * keep it in localStorage; signed-in members keep it on their profile row so
- * it follows them between devices. When a guest signs in and their profile has
- * no part yet, the local choice is adopted.
+ * A member's voice part is their section, decided once and then changed only
+ * with an administrator's approval. It is deliberately no longer the same
+ * thing as the library filter: browsing another section's music is useful and
+ * harmless, so the filter lives in the page's URL and this provider only
+ * tracks who you actually are.
+ *
+ * Guests have nobody to approve them, so their choice stays in localStorage
+ * and is adopted onto their profile the first time they sign in.
  */
 export function VoicePartProvider({ children }: { children: React.ReactNode }) {
   const { data: parts = [], isLoading } = useVoiceClassifications();
-  const { profile, status } = useAuth();
+  const { profile, status, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
-  const [localId, setLocalId] = React.useState<string | null>(() => readStored());
-  const syncedRef = React.useRef<string | null>(null);
+  const [guestId, setGuestId] = React.useState<string | null>(() => readStored());
+  const adoptedRef = React.useRef<string | null>(null);
 
   const profileVoiceId = profile?.voice_classification_id ?? null;
+  const isMember = status === "authenticated" && Boolean(profile);
 
+  const pending = useQuery({
+    queryKey: queryKeys.myVoiceRequest(profile?.id ?? "anonymous"),
+    queryFn: () => getMyPendingRequest(profile!.id),
+    enabled: isMember,
+    staleTime: 15_000,
+  });
+
+  // Adopt a guest's choice onto their profile the first time they sign in.
   React.useEffect(() => {
-    if (status !== "authenticated" || !profile) return;
-
+    if (!isMember || !profile) return;
     if (profileVoiceId) {
-      setLocalId(profileVoiceId);
       writeStored(profileVoiceId);
       return;
     }
-    // Adopt the guest selection once, right after signing in.
-    if (localId && syncedRef.current !== profile.id) {
-      syncedRef.current = profile.id;
-      updateOwnProfile(profile.id, { voice_classification_id: localId })
-        .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.profile(profile.id) }))
-        .catch(() => undefined);
+    if (guestId && adoptedRef.current !== profile.id) {
+      adoptedRef.current = profile.id;
+      updateOwnProfile(profile.id, { voice_classification_id: guestId })
+        .then(() => refreshProfile())
+        .catch((error) => console.error("[dma_songs] could not adopt guest voice part", error));
     }
-  }, [status, profile, profileVoiceId, localId, queryClient]);
+  }, [isMember, profile, profileVoiceId, guestId, refreshProfile]);
 
-  const select = React.useCallback(
-    (id: string | null) => {
-      setLocalId(id);
-      writeStored(id);
-      if (profile) {
-        updateOwnProfile(profile.id, { voice_classification_id: id })
-          .then(() => queryClient.invalidateQueries({ queryKey: queryKeys.profile(profile.id) }))
-          .catch(() => undefined);
-      }
-    },
-    [profile, queryClient],
-  );
-
-  const selectedId = React.useMemo(() => {
-    const candidate = profileVoiceId ?? localId;
+  const myPartId = React.useMemo(() => {
+    const candidate = isMember ? profileVoiceId : guestId;
     if (!candidate) return null;
-    // A part can be removed or deactivated while a stale id sits in storage.
+    // A part can be deactivated or deleted while a stale id sits in storage.
     return parts.some((p) => p.id === candidate) ? candidate : null;
-  }, [profileVoiceId, localId, parts]);
+  }, [isMember, profileVoiceId, guestId, parts]);
+
+  const choose = useMutation({
+    mutationFn: async ({ id, note }: { id: string; note?: string }) => {
+      // Guests have no profile to move and nobody to ask.
+      if (!isMember || !profile) {
+        setGuestId(id);
+        writeStored(id);
+        return { requestId: null as string | null, applied: true };
+      }
+      const requestId = await requestVoiceChange(id, note);
+      // The database returns null when it applied the change outright, which
+      // is what happens on a first choice.
+      return { requestId, applied: requestId === null };
+    },
+    onSuccess: async (result, variables) => {
+      const part = parts.find((p) => p.id === variables.id);
+      if (result.applied) {
+        writeStored(variables.id);
+        await refreshProfile();
+        toast.success(part ? `You're in ${part.name}` : "Voice part saved");
+      } else {
+        toast.success("Request sent", {
+          description: `An administrator will review your move to ${part?.name ?? "the new part"}.`,
+        });
+      }
+      queryClient.invalidateQueries({ queryKey: queryKeys.myVoiceRequest(profile?.id ?? "anonymous") });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingVoiceRequests });
+    },
+    onError: (error) => toast.error(errorMessage(error, "That didn't go through.")),
+  });
+
+  const cancel = useMutation({
+    mutationFn: async () => {
+      const request = pending.data;
+      if (!request) throw new Error("There is no request to withdraw.");
+      await cancelVoiceChangeRequest(request.id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: queryKeys.myVoiceRequest(profile?.id ?? "anonymous") });
+      queryClient.invalidateQueries({ queryKey: queryKeys.pendingVoiceRequests });
+      toast.success("Request withdrawn");
+    },
+    onError: (error) => toast.error(errorMessage(error, "The request couldn't be withdrawn.")),
+  });
 
   const value = React.useMemo<VoicePartState>(
     () => ({
       parts,
-      selectedId,
-      selected: parts.find((p) => p.id === selectedId) ?? null,
+      myPartId,
+      myPart: parts.find((p) => p.id === myPartId) ?? null,
+      isFirstChoice: myPartId === null,
+      pendingRequest: pending.data ?? null,
       isLoading,
-      select,
-      clear: () => select(null),
+      isSubmitting: choose.isPending || cancel.isPending,
+      choosePart: async (id, note) => {
+        await choose.mutateAsync({ id, note });
+      },
+      cancelRequest: async () => {
+        await cancel.mutateAsync();
+      },
+      clear: () => {
+        if (isMember) return; // members cannot un-assign themselves
+        setGuestId(null);
+        writeStored(null);
+      },
     }),
-    [parts, selectedId, isLoading, select],
+    [parts, myPartId, pending.data, isLoading, choose, cancel, isMember],
   );
 
   return <VoicePartContext.Provider value={value}>{children}</VoicePartContext.Provider>;

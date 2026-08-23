@@ -17,6 +17,12 @@ export interface AuthState {
    * flipping this in devtools reveals a dashboard whose every query fails.
    */
   isAdmin: boolean;
+  /**
+   * Set when the profile or role lookup itself failed, as opposed to
+   * succeeding and finding no admin role. Without this the two are
+   * indistinguishable and a broken policy looks exactly like "not an admin".
+   */
+  identityError: string | null;
   refreshProfile: () => Promise<void>;
 }
 
@@ -27,19 +33,48 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = React.useState<AuthState["profile"]>(null);
   const [roles, setRoles] = React.useState<AppRole[]>([]);
   const [status, setStatus] = React.useState<AuthState["status"]>("loading");
+  const [identityError, setIdentityError] = React.useState<string | null>(null);
 
   const loadIdentity = React.useCallback(async (userId: string | undefined) => {
     if (!userId) {
       setProfile(null);
       setRoles([]);
+      setIdentityError(null);
       return;
     }
-    const [nextProfile, nextRoles] = await Promise.all([
-      getProfile(userId).catch(() => null),
-      getOwnRoles(userId).catch(() => [] as AppRole[]),
+
+    const [profileResult, rolesResult] = await Promise.allSettled([
+      getProfile(userId),
+      getOwnRoles(userId),
     ]);
-    setProfile(nextProfile);
-    setRoles(nextRoles);
+
+    setProfile(profileResult.status === "fulfilled" ? profileResult.value : null);
+    setRoles(rolesResult.status === "fulfilled" ? rolesResult.value : []);
+
+    // A failed lookup is reported rather than swallowed. Swallowing it turns
+    // "the database refused to tell us your roles" into a silent
+    // "you are not an administrator", which is a miserable thing to debug.
+    const failures = [
+      profileResult.status === "rejected"
+        ? `profile: ${(profileResult.reason as Error)?.message ?? "unknown error"}`
+        : null,
+      rolesResult.status === "rejected"
+        ? `roles: ${(rolesResult.reason as Error)?.message ?? "unknown error"}`
+        : null,
+    ].filter(Boolean);
+
+    if (failures.length > 0) {
+      console.error("[dma_songs] identity lookup failed —", failures.join(" | "));
+      setIdentityError(failures.join(" | "));
+    } else {
+      setIdentityError(null);
+      if (profileResult.status === "fulfilled" && !profileResult.value) {
+        console.warn(
+          "[dma_songs] signed in, but there is no profiles row for this account. " +
+            "See the backfill at the bottom of supabase/diagnose.sql.",
+        );
+      }
+    }
   }, []);
 
   React.useEffect(() => {
@@ -88,9 +123,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       profile,
       roles,
       isAdmin: roles.includes("admin"),
+      identityError,
       refreshProfile,
     }),
-    [status, session, profile, roles, refreshProfile],
+    [status, session, profile, roles, identityError, refreshProfile],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

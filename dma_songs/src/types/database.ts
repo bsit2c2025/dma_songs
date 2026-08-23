@@ -13,6 +13,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type AppRole = "admin" | "singer";
+export type VoiceRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 export type SongStatus = "active" | "disabled";
 
 export interface Database {
@@ -175,6 +176,25 @@ export interface Database {
         Update: Partial<Database["public"]["Tables"]["announcements"]["Insert"]>;
         Relationships: [];
       };
+      voice_change_requests: {
+        Row: {
+          id: string;
+          user_id: string;
+          requested_voice_id: string;
+          current_voice_id: string | null;
+          status: VoiceRequestStatus;
+          note: string | null;
+          decision_note: string | null;
+          decided_by: string | null;
+          decided_at: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        // Writes go through request_voice_change / admin_decide_voice_change.
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
       activity_logs: {
         Row: {
           id: string;
@@ -212,8 +232,22 @@ export interface Database {
       admin_dashboard_stats: { Args: Record<string, never>; Returns: Json };
       log_admin_event: { Args: { p_action: string; p_metadata?: Json }; Returns: void };
       admin_save_song: { Args: { p_payload: Json }; Returns: string };
+      request_voice_change: {
+        Args: { p_voice_classification_id: string; p_note?: string | null };
+        Returns: string | null;
+      };
+      cancel_voice_change_request: { Args: { p_request_id: string }; Returns: void };
+      admin_decide_voice_change: {
+        Args: { p_request_id: string; p_approve: boolean; p_note?: string | null };
+        Returns: void;
+      };
+      pending_voice_request_count: { Args: Record<string, never>; Returns: number };
     };
-    Enums: { app_role: AppRole; song_status: SongStatus };
+    Enums: {
+      app_role: AppRole;
+      song_status: SongStatus;
+      voice_request_status: VoiceRequestStatus;
+    };
     CompositeTypes: Record<string, never>;
   };
 }

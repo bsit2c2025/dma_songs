@@ -16,6 +16,10 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const ADMIN_PAGE_SIZE = 20;
 
 export const ACTIVITY_LABELS: Record<string, string> = {
+  "voice_request.created": "Voice part change requested",
+  "voice_request.approved": "Voice part change approved",
+  "voice_request.rejected": "Voice part change declined",
+  "voice_request.cancelled": "Voice part request withdrawn",
   "song.created": "Song added",
   "song.updated": "Song updated",
   "song.deleted": "Song deleted",

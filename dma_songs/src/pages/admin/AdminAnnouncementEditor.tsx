@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { transformingResolver } from "@/lib/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft } from "lucide-react";
 import { toast } from "sonner";
@@ -19,7 +19,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAnnouncement } from "@/hooks/useAnnouncements";
 import { createAnnouncement, updateAnnouncement } from "@/services/announcements";
-import { announcementFormSchema, type AnnouncementFormValues } from "@/schemas/announcement";
+import {
+  announcementFormSchema,
+  type AnnouncementFormOutput,
+  type AnnouncementFormValues,
+} from "@/schemas/announcement";
 import { errorMessage } from "@/lib/errors";
 import { fromLocalInputValue, toLocalInputValue } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -45,8 +49,10 @@ export default function AdminAnnouncementEditor() {
   const existing = useAnnouncement(id);
   useDocumentTitle(isEdit ? "Edit announcement" : "New announcement");
 
-  const form = useForm<AnnouncementFormValues>({
-    resolver: zodResolver(announcementFormSchema),
+  // Third generic = the schema's output type; handleSubmit receives values that
+  // the resolver has already transformed, so they must not be parsed again.
+  const form = useForm<AnnouncementFormValues, unknown, AnnouncementFormOutput>({
+    resolver: transformingResolver(announcementFormSchema),
     defaultValues: EMPTY,
     mode: "onBlur",
   });
@@ -70,10 +76,8 @@ export default function AdminAnnouncementEditor() {
   }, [existing.data]);
 
   const save = useMutation({
-    mutationFn: (values: AnnouncementFormValues) => {
-      const parsed = announcementFormSchema.parse(values);
-      return isEdit ? updateAnnouncement(id!, parsed) : createAnnouncement(parsed);
-    },
+    mutationFn: (values: AnnouncementFormOutput) =>
+      isEdit ? updateAnnouncement(id!, values) : createAnnouncement(values),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["admin", "announcements"] });
       queryClient.invalidateQueries({ queryKey: ["announcements"] });

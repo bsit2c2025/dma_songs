@@ -19,7 +19,7 @@ const GENERAL = "__general__";
 export default function SongDetail() {
   const { id } = useParams<{ id: string }>();
   const { data: song, isLoading, isError, error, refetch } = useSong(id);
-  const { selectedId, parts } = useVoicePart();
+  const { myPartId, parts } = useVoicePart();
 
   useDocumentTitle(song?.title, song?.description ?? undefined);
 
@@ -29,11 +29,11 @@ export default function SongDetail() {
    */
   const initialTab = React.useMemo(() => {
     if (!song) return GENERAL;
-    const own = song.videos.find((v) => v.voice_classification_id === selectedId);
+    const own = song.videos.find((v) => v.voice_classification_id === myPartId);
     if (own) return own.id;
     const general = song.videos.find((v) => v.voice_classification_id === null);
     return general?.id ?? song.videos[0]?.id ?? GENERAL;
-  }, [song, selectedId]);
+  }, [song, myPartId]);
 
   const [tab, setTab] = React.useState(initialTab);
   React.useEffect(() => setTab(initialTab), [initialTab]);
@@ -71,7 +71,7 @@ export default function SongDetail() {
     song.category ? { label: "Category", value: song.category } : null,
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-  const selectedPart = parts.find((p) => p.id === selectedId) ?? null;
+  const selectedPart = parts.find((p) => p.id === myPartId) ?? null;
 
   function labelFor(voiceClassificationId: string | null, fallback: string | null) {
     if (!voiceClassificationId) return fallback || "Full ensemble";

@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
+import { transformingResolver } from "@/lib/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -15,7 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useSettings } from "@/hooks/useSettings";
 import { saveSettings, settingBoolean, settingNumber, settingString } from "@/services/settings";
-import { settingsFormSchema, type SettingsFormValues } from "@/schemas/settings";
+import {
+  settingsFormSchema,
+  type SettingsFormOutput,
+  type SettingsFormValues,
+} from "@/schemas/settings";
 import { errorMessage } from "@/lib/errors";
 import { queryKeys } from "@/lib/queryKeys";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
@@ -25,8 +29,8 @@ export default function AdminSettings() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading, isError, error, refetch } = useSettings();
 
-  const form = useForm<SettingsFormValues>({
-    resolver: zodResolver(settingsFormSchema),
+  const form = useForm<SettingsFormValues, unknown, SettingsFormOutput>({
+    resolver: transformingResolver(settingsFormSchema),
     defaultValues: {
       appName: "DLL Music and Arts",
       tagline: "",
@@ -55,8 +59,7 @@ export default function AdminSettings() {
   }, [settings]);
 
   const save = useMutation({
-    mutationFn: (values: SettingsFormValues) => {
-      const parsed = settingsFormSchema.parse(values);
+    mutationFn: (parsed: SettingsFormOutput) => {
       return saveSettings({
         "app.name": parsed.appName,
         "app.tagline": parsed.tagline || null,
