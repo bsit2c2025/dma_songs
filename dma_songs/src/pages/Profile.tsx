@@ -14,6 +14,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Field } from "@/components/common/Field";
 import { VoicePartPicker } from "@/components/common/VoicePartPicker";
 import { VoiceRequestHistory } from "@/components/common/VoiceRequestHistory";
+import { PrivacyControls } from "@/components/common/PrivacyControls";
+import { Switch } from "@/components/ui/switch";
+import { Label } from "@/components/ui/label";
+import { Link } from "react-router-dom";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useVoicePart } from "@/features/voice/VoicePartProvider";
 import { updateOwnProfile } from "@/services/members";
@@ -48,6 +52,16 @@ export default function Profile() {
       toast.success("Profile saved");
     },
     onError: (error) => toast.error(errorMessage(error, "Your profile didn't save.")),
+  });
+
+  const preference = useMutation({
+    mutationFn: (prefersOwnPart: boolean) =>
+      updateOwnProfile(user!.id, { prefers_own_part: prefersOwnPart }),
+    onSuccess: async () => {
+      await refreshProfile();
+      toast.success("Preference saved");
+    },
+    onError: (error) => toast.error(errorMessage(error, "That preference didn't save.")),
   });
 
   const [signingOut, setSigningOut] = React.useState(false);
@@ -120,6 +134,49 @@ export default function Profile() {
         <CardContent className="space-y-6">
           <VoicePartPicker />
           <VoiceRequestHistory />
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Library preferences</CardTitle>
+          <CardDescription>
+            You can always browse every voice part's music — this only decides what the library
+            shows when you open it.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <Label htmlFor="prefers-own-part">Open the library on my own part</Label>
+              <p className="mt-1 text-xs text-muted-foreground">
+                Off shows every song. On starts filtered to your section, and you can change the
+                filter at any time.
+              </p>
+            </div>
+            <Switch
+              id="prefers-own-part"
+              checked={profile?.prefers_own_part ?? false}
+              onCheckedChange={(checked) => preference.mutate(checked)}
+              disabled={preference.isPending}
+            />
+          </div>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Your data</CardTitle>
+          <CardDescription>
+            Your rights under the Data Privacy Act. See the{" "}
+            <Link to="/privacy" className="underline">
+              privacy notice
+            </Link>{" "}
+            for the detail.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <PrivacyControls />
         </CardContent>
       </Card>
 

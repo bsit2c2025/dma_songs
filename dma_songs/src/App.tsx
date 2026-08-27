@@ -9,6 +9,7 @@ import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 import { AppErrorBoundary } from "@/components/common/AppErrorBoundary";
+import { StorageNotice } from "@/components/common/StorageNotice";
 
 // Eager: the pages almost everyone lands on.
 import Home from "@/pages/Home";
@@ -23,6 +24,9 @@ const AuthCallback = React.lazy(() => import("@/pages/AuthCallback"));
 const ResetPassword = React.lazy(() => import("@/pages/ResetPassword"));
 const Profile = React.lazy(() => import("@/pages/Profile"));
 const Unauthorized = React.lazy(() => import("@/pages/Unauthorized"));
+const Privacy = React.lazy(() => import("@/pages/legal/Privacy"));
+const Terms = React.lazy(() => import("@/pages/legal/Terms"));
+const CopyrightPage = React.lazy(() => import("@/pages/legal/Copyright"));
 const NotFound = React.lazy(() => import("@/pages/NotFound"));
 
 const Dashboard = React.lazy(() => import("@/pages/admin/Dashboard"));
@@ -72,6 +76,9 @@ export default function App() {
                     <Route path="/login" element={<Login />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
                     <Route path="/unauthorized" element={<Unauthorized />} />
+                    <Route path="/privacy" element={<Privacy />} />
+                    <Route path="/terms" element={<Terms />} />
+                    <Route path="/copyright" element={<CopyrightPage />} />
 
                     <Route element={<RequireAuth />}>
                       <Route path="/profile" element={<Profile />} />
@@ -100,6 +107,7 @@ export default function App() {
                 </Routes>
               </React.Suspense>
 
+              <StorageNotice />
               <Toaster position="top-center" richColors closeButton />
             </VoicePartProvider>
           </AuthProvider>

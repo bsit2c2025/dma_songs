@@ -177,6 +177,17 @@ export default function Login() {
                     {...signUp.register("password")}
                   />
                 </Field>
+                <p className="text-xs text-muted-foreground">
+                  Creating an account means you accept the{" "}
+                  <Link to="/terms" className="underline">
+                    terms of use
+                  </Link>{" "}
+                  and the{" "}
+                  <Link to="/privacy" className="underline">
+                    privacy notice
+                  </Link>
+                  . You can download or erase your data at any time from your profile.
+                </p>
                 <Button type="submit" className="w-full" loading={signUp.formState.isSubmitting}>
                   Create account
                 </Button>

@@ -145,11 +145,23 @@ export function PublicLayout() {
         <div className="container flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
           <Logo size="sm" />
           <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:items-end">
-            <p>© {new Date().getFullYear()} DLL Music and Arts. All rights reserved.</p>
-            <div className="flex gap-4">
+            <p>
+              © {new Date().getFullYear()} DLL Music and Arts. Music and arrangements remain the
+              property of their rights holders.
+            </p>
+            <div className="flex flex-wrap gap-4">
+              <Link className="hover:text-foreground" to="/privacy">
+                Privacy
+              </Link>
+              <Link className="hover:text-foreground" to="/terms">
+                Terms
+              </Link>
+              <Link className="hover:text-foreground" to="/copyright">
+                Copyright
+              </Link>
               {contactEmail ? (
                 <a className="hover:text-foreground" href={`mailto:${contactEmail}`}>
-                  Contact us
+                  Contact
                 </a>
               ) : null}
               <Link className="hover:text-foreground" to={isAdmin ? "/admin" : "/admin/login"}>

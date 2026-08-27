@@ -8,6 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { YouTubeEmbed } from "@/components/common/YouTubeEmbed";
 import { VoicePartChip } from "@/components/common/VoicePartChip";
+import { VOICE_FAMILIES } from "@/types/models";
+import type { VoiceFamily } from "@/types/database";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { useSong } from "@/hooks/useSongs";
@@ -24,16 +26,28 @@ export default function SongDetail() {
   useDocumentTitle(song?.title, song?.description ?? undefined);
 
   /**
-   * Open on the video for the singer's own part when there is one, so the
-   * common case is zero clicks. Otherwise fall back to a general recording.
+   * Open on the video closest to the singer's own part, so the common case is
+   * zero clicks: their exact divided part first, then a recording for their
+   * whole voice (an SATB song has one soprano video, not two), then a
+   * full-ensemble take.
    */
   const initialTab = React.useMemo(() => {
     if (!song) return GENERAL;
+    const myFamily = parts.find((p) => p.id === myPartId)?.family ?? null;
+
     const own = song.videos.find((v) => v.voice_classification_id === myPartId);
     if (own) return own.id;
-    const general = song.videos.find((v) => v.voice_classification_id === null);
+
+    const family = myFamily
+      ? song.videos.find((v) => v.voice_family === myFamily)
+      : undefined;
+    if (family) return family.id;
+
+    const general = song.videos.find(
+      (v) => v.voice_classification_id === null && v.voice_family === null,
+    );
     return general?.id ?? song.videos[0]?.id ?? GENERAL;
-  }, [song, myPartId]);
+  }, [song, myPartId, parts]);
 
   const [tab, setTab] = React.useState(initialTab);
   React.useEffect(() => setTab(initialTab), [initialTab]);
@@ -73,10 +87,15 @@ export default function SongDetail() {
 
   const selectedPart = parts.find((p) => p.id === myPartId) ?? null;
 
-  function labelFor(voiceClassificationId: string | null, fallback: string | null) {
-    if (!voiceClassificationId) return fallback || "Full ensemble";
-    const part = parts.find((p) => p.id === voiceClassificationId);
-    return fallback || part?.name || "Part video";
+  function labelFor(video: { voice_classification_id: string | null; voice_family: VoiceFamily | null; label: string | null }) {
+    if (video.label) return video.label;
+    if (video.voice_classification_id) {
+      return parts.find((p) => p.id === video.voice_classification_id)?.name ?? "Part video";
+    }
+    if (video.voice_family) {
+      return VOICE_FAMILIES.find((f) => f.value === video.voice_family)?.label ?? "Voice video";
+    }
+    return "Full ensemble";
   }
 
   return (
@@ -133,7 +152,7 @@ export default function SongDetail() {
         ) : song.videos.length === 1 ? (
           <YouTubeEmbed
             videoId={song.videos[0]!.youtube_video_id}
-            title={`${song.title} — ${labelFor(song.videos[0]!.voice_classification_id, song.videos[0]!.label)}`}
+            title={`${song.title} — ${labelFor(song.videos[0]!)}`}
           />
         ) : (
           <Tabs value={tab} onValueChange={setTab}>
@@ -147,7 +166,7 @@ export default function SongDetail() {
                         {part.short_code}
                       </span>
                     ) : null}
-                    {labelFor(video.voice_classification_id, video.label)}
+                    {labelFor(video)}
                   </TabsTrigger>
                 );
               })}
@@ -156,7 +175,7 @@ export default function SongDetail() {
               <TabsContent key={video.id} value={video.id}>
                 <YouTubeEmbed
                   videoId={video.youtube_video_id}
-                  title={`${song.title} — ${labelFor(video.voice_classification_id, video.label)}`}
+                  title={`${song.title} — ${labelFor(video)}`}
                 />
               </TabsContent>
             ))}

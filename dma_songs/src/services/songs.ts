@@ -28,6 +28,11 @@ interface SongQueryRow {
   notes: string | null;
   thumbnail_url: string | null;
   status: "active" | "disabled";
+  part_mode: "simple" | "detailed";
+  rights_confirmed: boolean;
+  rights_holder: string | null;
+  rights_basis: string | null;
+  rights_note: string | null;
   created_at: string;
   updated_at: string;
   created_by: string | null;
@@ -153,13 +158,23 @@ export async function saveSong(values: SongFormOutput, id?: string): Promise<str
     notes: values.notes,
     thumbnail_url: values.thumbnailUrl,
     status: values.status,
-    voice_classification_ids: values.voiceClassificationIds,
+    part_mode: values.partMode,
+    rights_confirmed: values.rightsConfirmed,
+    rights_basis: values.rightsBasis,
+    rights_holder: values.rightsHolder,
+    rights_note: values.rightsNote,
+    // Simple mode sends families and the database expands them into their
+    // divided parts, so nothing downstream has to know which editor was used.
+    voice_families: values.partMode === "simple" ? values.voiceFamilies : [],
+    voice_classification_ids:
+      values.partMode === "detailed" ? values.voiceClassificationIds : [],
     videos: values.videos.map((video, index) => {
       const videoId = extractYouTubeId(video.url);
       if (!videoId) throw new Error(`"${video.url}" isn't a YouTube link.`);
       return {
         id: video.id ?? null,
         voice_classification_id: video.voiceClassificationId,
+        voice_family: video.voiceFamily,
         youtube_video_id: videoId,
         youtube_url: canonicalWatchUrl(videoId),
         label: video.label,

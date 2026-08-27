@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/select";
 import { useSongs, useSongCategories } from "@/hooks/useSongs";
 import { useVoicePart } from "@/features/voice/VoicePartProvider";
+import { useAuth } from "@/features/auth/AuthProvider";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import { useSettings } from "@/hooks/useSettings";
@@ -24,6 +25,7 @@ const ALL = "__all__";
 
 export default function Songs() {
   const { myPart, parts } = useVoicePart();
+  const { profile } = useAuth();
   const { data: settings } = useSettings();
   const pageSize = settingNumber(settings, "songs.page_size", 12);
   const [params, setParams] = useSearchParams();
@@ -72,6 +74,24 @@ export default function Songs() {
     if (debouncedSearch !== (params.get("q") ?? "")) update({ q: debouncedSearch || null });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [debouncedSearch]);
+
+  /**
+   * Apply the member's "open on my own part" preference once, and only when
+   * they arrived without a filter in the URL. A shared link always wins, and
+   * clearing the filter afterwards must stick rather than snapping back.
+   */
+  const appliedPreference = React.useRef(false);
+  React.useEffect(() => {
+    if (appliedPreference.current) return;
+    if (!profile?.prefers_own_part || !myPart) return;
+    if (params.has("part")) {
+      appliedPreference.current = true;
+      return;
+    }
+    appliedPreference.current = true;
+    update({ part: myPart.id });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [profile?.prefers_own_part, myPart]);
 
   // Changing the voice part changes the result set, so go back to page one.
   React.useEffect(() => {

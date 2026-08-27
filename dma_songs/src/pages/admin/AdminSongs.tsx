@@ -1,7 +1,9 @@
 import * as React from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { Eye, EyeOff, MoreHorizontal, Music4, Pencil, Plus, SearchX, Trash2, Video } from "lucide-react";
+import {
+  Eye, EyeOff, FolderInput, MoreHorizontal, Music4, Pencil, Plus, SearchX, Trash2, Video,
+} from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SearchInput } from "@/components/common/SearchInput";
@@ -9,6 +11,14 @@ import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Pagination } from "@/components/common/Pagination";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
+import { BulkActionBar } from "@/components/common/BulkActionBar";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
+import { bulkSongAction, type BulkAction } from "@/services/bulkSongs";
 import { VoicePartChip } from "@/components/common/VoicePartChip";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +31,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
-import { useSongs } from "@/hooks/useSongs";
+import { useSongs, useSongCategories } from "@/hooks/useSongs";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { deleteSong, setSongStatus } from "@/services/songs";
@@ -44,7 +54,22 @@ export default function AdminSongs() {
   const [page, setPage] = React.useState(1);
   const [pendingDelete, setPendingDelete] = React.useState<Song | null>(null);
 
+  /**
+   * Selection is held as a map of id to title rather than a set of ids, so the
+   * confirmation dialogs can name what is about to happen even after the rows
+   * themselves have been filtered off screen.
+   */
+  const [selected, setSelected] = React.useState<Record<string, string>>({});
+  const [bulkCategory, setBulkCategory] = React.useState("");
+  const [categoryOpen, setCategoryOpen] = React.useState(false);
+  const [bulkPart, setBulkPart] = React.useState<{ id: string; mode: "add_part" | "remove_part" } | null>(null);
+  const [bulkDeleteOpen, setBulkDeleteOpen] = React.useState(false);
+
+  const selectedIds = Object.keys(selected);
+  const clearSelection = () => setSelected({});
+
   const parts = useVoiceClassifications(true);
+  const categories = useSongCategories();
   const query = useSongs({
     search: debouncedSearch,
     voiceClassificationId: partId,
@@ -81,6 +106,49 @@ export default function AdminSongs() {
   });
 
   const rows = query.data?.rows ?? [];
+  const allOnPageSelected = rows.length > 0 && rows.every((song) => selected[song.id]);
+
+  function toggleOne(song: Song, checked: boolean) {
+    setSelected((current) => {
+      const next = { ...current };
+      if (checked) next[song.id] = song.title;
+      else delete next[song.id];
+      return next;
+    });
+  }
+
+  function togglePage(checked: boolean) {
+    setSelected((current) => {
+      const next = { ...current };
+      rows.forEach((song) => {
+        if (checked) next[song.id] = song.title;
+        else delete next[song.id];
+      });
+      return next;
+    });
+  }
+
+  const bulk = useMutation({
+    mutationFn: ({ action, value }: { action: BulkAction; value?: string | null }) =>
+      bulkSongAction(selectedIds, action, value),
+    onSuccess: (count, variables) => {
+      invalidate();
+      clearSelection();
+      setCategoryOpen(false);
+      setBulkPart(null);
+      setBulkDeleteOpen(false);
+      const what: Record<BulkAction, string> = {
+        set_category: "recategorised",
+        enable: "enabled",
+        disable: "disabled",
+        delete: "deleted",
+        add_part: "updated",
+        remove_part: "updated",
+      };
+      toast.success(`${count} song${count === 1 ? "" : "s"} ${what[variables.action]}`);
+    },
+    onError: (error) => toast.error(errorMessage(error, "That bulk change didn't apply.")),
+  });
 
   return (
     <div className="space-y-6">
@@ -96,6 +164,59 @@ export default function AdminSongs() {
           </Button>
         }
       />
+
+      <BulkActionBar count={selectedIds.length} onClear={clearSelection}>
+        <Button size="sm" variant="outline" onClick={() => setCategoryOpen(true)}>
+          <FolderInput aria-hidden /> Set category
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => bulk.mutate({ action: "enable" })}
+          disabled={bulk.isPending}
+        >
+          <Eye aria-hidden /> Enable
+        </Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={() => bulk.mutate({ action: "disable" })}
+          disabled={bulk.isPending}
+        >
+          <EyeOff aria-hidden /> Disable
+        </Button>
+        <Select
+          value=""
+          onValueChange={(value) => {
+            const [mode, id] = value.split(":");
+            setBulkPart({ id, mode: mode as "add_part" | "remove_part" });
+          }}
+        >
+          <SelectTrigger className="h-9 w-44" aria-label="Add or remove a voice part">
+            <SelectValue placeholder="Voice parts…" />
+          </SelectTrigger>
+          <SelectContent>
+            {(parts.data ?? []).map((part) => (
+              <SelectItem key={`add-${part.id}`} value={`add_part:${part.id}`}>
+                Add {part.name}
+              </SelectItem>
+            ))}
+            {(parts.data ?? []).map((part) => (
+              <SelectItem key={`remove-${part.id}`} value={`remove_part:${part.id}`}>
+                Remove {part.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <Button
+          size="sm"
+          variant="destructive"
+          onClick={() => setBulkDeleteOpen(true)}
+          disabled={bulk.isPending}
+        >
+          <Trash2 aria-hidden /> Delete
+        </Button>
+      </BulkActionBar>
 
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <SearchInput
@@ -180,6 +301,13 @@ export default function AdminSongs() {
             <Table>
               <TableHeader>
                 <TableRow>
+                  <TableHead className="w-10">
+                    <Checkbox
+                      checked={allOnPageSelected}
+                      onCheckedChange={(value) => togglePage(value === true)}
+                      aria-label="Select every song on this page"
+                    />
+                  </TableHead>
                   <TableHead>Song</TableHead>
                   <TableHead className="hidden md:table-cell">Voice parts</TableHead>
                   <TableHead className="hidden lg:table-cell">Videos</TableHead>
@@ -192,7 +320,14 @@ export default function AdminSongs() {
               </TableHeader>
               <TableBody>
                 {rows.map((song) => (
-                  <TableRow key={song.id}>
+                  <TableRow key={song.id} data-state={selected[song.id] ? "selected" : undefined}>
+                    <TableCell>
+                      <Checkbox
+                        checked={Boolean(selected[song.id])}
+                        onCheckedChange={(value) => toggleOne(song, value === true)}
+                        aria-label={`Select ${song.title}`}
+                      />
+                    </TableCell>
                     <TableCell>
                       <Link to={`/admin/songs/${song.id}/edit`} className="font-semibold hover:text-primary">
                         {song.title}
@@ -284,6 +419,94 @@ export default function AdminSongs() {
         total={query.data?.total ?? 0}
         onPageChange={setPage}
         label="songs"
+      />
+
+      <Dialog open={categoryOpen} onOpenChange={setCategoryOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Set the category on {selectedIds.length} song(s)</DialogTitle>
+            <DialogDescription>
+              This replaces whatever category those songs have now. Leave it empty to clear it.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-2">
+            <Label htmlFor="bulk-category">Category</Label>
+            <Input
+              id="bulk-category"
+              list="bulk-category-options"
+              value={bulkCategory}
+              onChange={(event) => setBulkCategory(event.target.value)}
+              placeholder="Liturgical, Patriotic, Contest piece…"
+            />
+            <datalist id="bulk-category-options">
+              {(categories.data ?? []).map((item) => (
+                <option key={item} value={item} />
+              ))}
+            </datalist>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setCategoryOpen(false)}>
+              Cancel
+            </Button>
+            <Button
+              loading={bulk.isPending}
+              onClick={() => bulk.mutate({ action: "set_category", value: bulkCategory })}
+            >
+              Apply to {selectedIds.length} song(s)
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <ConfirmDialog
+        open={Boolean(bulkPart)}
+        onOpenChange={(open) => !open && setBulkPart(null)}
+        title={
+          bulkPart?.mode === "add_part"
+            ? "Add this voice part to the selected songs?"
+            : "Remove this voice part from the selected songs?"
+        }
+        confirmLabel={bulkPart?.mode === "add_part" ? "Add the part" : "Remove the part"}
+        destructive={bulkPart?.mode === "remove_part"}
+        loading={bulk.isPending}
+        onConfirm={() => bulkPart && bulk.mutate({ action: bulkPart.mode, value: bulkPart.id })}
+        description={
+          <span>
+            {bulkPart?.mode === "add_part" ? "Adding" : "Removing"}{" "}
+            <strong>{(parts.data ?? []).find((p) => p.id === bulkPart?.id)?.name}</strong> across{" "}
+            {selectedIds.length} song(s).
+            {bulkPart?.mode === "remove_part" ? (
+              <span className="mt-2 block text-muted-foreground">
+                Songs where this is the only remaining part are skipped — a song with no parts is
+                one nobody can find.
+              </span>
+            ) : null}
+          </span>
+        }
+      />
+
+      <ConfirmDialog
+        open={bulkDeleteOpen}
+        onOpenChange={setBulkDeleteOpen}
+        title={`Delete ${selectedIds.length} song(s) permanently?`}
+        destructive
+        confirmLabel={`Delete ${selectedIds.length} song(s)`}
+        confirmPhrase={selectedIds.length > 4 ? "DELETE" : undefined}
+        loading={bulk.isPending}
+        onConfirm={() => bulk.mutate({ action: "delete" })}
+        description={
+          <span className="block space-y-2">
+            <span className="block">
+              These songs and their video links go for everyone. This can't be undone.
+            </span>
+            <span className="block max-h-32 overflow-auto rounded border border-border bg-muted p-2 text-xs">
+              {Object.values(selected).join(", ")}
+            </span>
+            <span className="block text-muted-foreground">
+              To take them out of the library temporarily, use Disable instead.
+            </span>
+          </span>
+        }
       />
 
       <ConfirmDialog

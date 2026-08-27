@@ -111,6 +111,7 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0006_song_write_rpc.sql` | The transactional song-save function |
 | `0007_grants.sql` | Table privileges for the `anon` and `authenticated` roles |
 | `0008_voice_change_requests.sql` | Admin-approved voice part changes |
+| `0009_privacy_families_bulk.sql` | SATB voices, bulk song actions, member admin, privacy fields |
 
 Each file is safe to re-run.
 
@@ -363,6 +364,27 @@ role actually holds.
 the database thinks of your account.
 
 ---
+
+## Legal pages
+
+Three pages ship at `/privacy`, `/terms` and `/copyright`, written against the Philippines' Data
+Privacy Act of 2012 (RA 10173). They read the institution's name, contact address, DPO and effective
+date from **Admin → Settings**, so they can be corrected without a redeploy.
+
+**Fill in the privacy contact email before launch.** Every page carries a warning while it is blank,
+because a privacy notice with no way to reach anyone does not do its job.
+
+**These are templates, not legal advice.** Have whoever handles DLL's legal and data-protection
+matters read them before the site goes live.
+
+Members can download everything held about them and erase their own account from their profile —
+both are rights under RA 10173, and both are buttons rather than an email address and a wait.
+
+**On lyrics:** storing lyrics on your own server is the largest copyright exposure in this app,
+larger than the YouTube embeds, which are only links. The song editor will not save lyrics until an
+administrator records where the material came from — public domain, institution-owned, licensed, or
+used with written permission — and that record is editable afterwards. The constraint is enforced by
+the database, not the form.
 
 ## Licence and credits
 

@@ -90,3 +90,13 @@
     scroll-behavior: auto !important;
   }
 }
+
+/* Legal pages: readable measure, restrained links. */
+@layer components {
+  .prose-legal a {
+    @apply font-medium text-primary underline underline-offset-2;
+  }
+  .prose-legal h2 {
+    @apply font-display;
+  }
+}

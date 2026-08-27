@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { ShieldCheck, ShieldOff, UserRound, Users } from "lucide-react";
+import { Settings2, ShieldCheck, ShieldOff, UserRound, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SearchInput } from "@/components/common/SearchInput";
@@ -9,6 +9,7 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { Pagination } from "@/components/common/Pagination";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { VoicePartChip } from "@/components/common/VoicePartChip";
+import { MemberSheet } from "@/components/common/MemberSheet";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -45,6 +46,7 @@ export default function AdminUsers() {
   const [partId, setPartId] = React.useState<string | null>(null);
   const [page, setPage] = React.useState(1);
   const [pendingAdmin, setPendingAdmin] = React.useState<{ member: MemberSummary; grant: boolean } | null>(null);
+  const [managing, setManaging] = React.useState<MemberSummary | null>(null);
 
   const parts = useVoiceClassifications(true);
   const params = {
@@ -229,6 +231,10 @@ export default function AdminUsers() {
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end">
                             <DropdownMenuLabel>Manage</DropdownMenuLabel>
+                            <DropdownMenuItem onSelect={() => setManaging(member)}>
+                              <Settings2 aria-hidden /> Name, note, password, erase…
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem
                               disabled={isSelf}
                               onSelect={() =>
@@ -271,6 +277,12 @@ export default function AdminUsers() {
         total={query.data?.total ?? 0}
         onPageChange={setPage}
         label="members"
+      />
+
+      <MemberSheet
+        member={managing}
+        open={Boolean(managing)}
+        onOpenChange={(open) => !open && setManaging(null)}
       />
 
       <ConfirmDialog

@@ -13,6 +13,8 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type AppRole = "admin" | "singer";
+export type VoiceFamily = "soprano" | "alto" | "tenor" | "bass";
+export type SongPartMode = "simple" | "detailed";
 export type VoiceRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
 export type SongStatus = "active" | "disabled";
 
@@ -29,6 +31,7 @@ export interface Database {
           color: string;
           sort_order: number;
           is_active: boolean;
+          family: VoiceFamily | null;
           created_at: string;
           updated_at: string;
         };
@@ -53,6 +56,10 @@ export interface Database {
           avatar_url: string | null;
           voice_classification_id: string | null;
           is_active: boolean;
+          prefers_own_part: boolean;
+          terms_accepted_at: string | null;
+          terms_version: string | null;
+          anonymized_at: string | null;
           last_seen_at: string | null;
           created_at: string;
           updated_at: string;
@@ -64,6 +71,9 @@ export interface Database {
           avatar_url?: string | null;
           voice_classification_id?: string | null;
           is_active?: boolean;
+          prefers_own_part?: boolean;
+          terms_accepted_at?: string | null;
+          terms_version?: string | null;
           last_seen_at?: string | null;
         };
         Update: Partial<Omit<Database["public"]["Tables"]["profiles"]["Insert"], "id">>;
@@ -92,6 +102,11 @@ export interface Database {
           notes: string | null;
           thumbnail_url: string | null;
           status: SongStatus;
+          part_mode: SongPartMode;
+          rights_confirmed: boolean;
+          rights_holder: string | null;
+          rights_basis: string | null;
+          rights_note: string | null;
           created_by: string | null;
           updated_by: string | null;
           created_at: string;
@@ -123,6 +138,7 @@ export interface Database {
           id: string;
           song_id: string;
           voice_classification_id: string | null;
+          voice_family: VoiceFamily | null;
           youtube_video_id: string;
           youtube_url: string;
           label: string | null;
@@ -195,6 +211,21 @@ export interface Database {
         Update: never;
         Relationships: [];
       };
+      member_notes: {
+        Row: {
+          user_id: string;
+          note: string;
+          updated_by: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          user_id: string;
+          note?: string;
+          updated_by?: string | null;
+        };
+        Update: { note?: string; updated_by?: string | null };
+        Relationships: [];
+      };
       activity_logs: {
         Row: {
           id: string;
@@ -232,6 +263,13 @@ export interface Database {
       admin_dashboard_stats: { Args: Record<string, never>; Returns: Json };
       log_admin_event: { Args: { p_action: string; p_metadata?: Json }; Returns: void };
       admin_save_song: { Args: { p_payload: Json }; Returns: string };
+      admin_bulk_song_action: {
+        Args: { p_song_ids: string[]; p_action: string; p_value?: string | null };
+        Returns: number;
+      };
+      admin_anonymize_member: { Args: { p_user_id: string }; Returns: void };
+      erase_my_account: { Args: Record<string, never>; Returns: void };
+      export_my_data: { Args: Record<string, never>; Returns: Json };
       request_voice_change: {
         Args: { p_voice_classification_id: string; p_note?: string | null };
         Returns: string | null;
@@ -247,6 +285,8 @@ export interface Database {
       app_role: AppRole;
       song_status: SongStatus;
       voice_request_status: VoiceRequestStatus;
+      voice_family: VoiceFamily;
+      song_part_mode: SongPartMode;
     };
     CompositeTypes: Record<string, never>;
   };

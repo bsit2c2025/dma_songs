@@ -69,7 +69,12 @@ export async function getProfile(userId: string) {
 
 export async function updateOwnProfile(
   userId: string,
-  values: { display_name?: string; voice_classification_id?: string | null; avatar_url?: string | null },
+  values: {
+    display_name?: string;
+    voice_classification_id?: string | null;
+    avatar_url?: string | null;
+    prefers_own_part?: boolean;
+  },
 ) {
   const { data, error } = await supabase
     .from("profiles")
@@ -79,6 +84,15 @@ export async function updateOwnProfile(
     .single();
   if (error) throw error;
   return data as Profile;
+}
+
+/** Admin edit of another member's profile. RLS restricts this to admins. */
+export async function updateMemberProfile(
+  userId: string,
+  patch: { display_name?: string },
+) {
+  const { error } = await supabase.from("profiles").update(patch).eq("id", userId);
+  if (error) throw error;
 }
 
 export async function setMemberVoiceClassification(userId: string, voiceClassificationId: string | null) {

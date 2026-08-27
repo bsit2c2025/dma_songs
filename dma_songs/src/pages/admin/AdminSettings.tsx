@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { transformingResolver } from "@/lib/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+import { Scale } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Field } from "@/components/common/Field";
 import { ImageField } from "@/components/common/ImageField";
@@ -40,6 +41,12 @@ export default function AdminSettings() {
       songsPageSize: 12,
       announcementsHomeLimit: 3,
       showAnnouncementBanner: true,
+      legalEntityName: "",
+      legalContactEmail: "",
+      legalDpoName: "",
+      legalAddress: "",
+      legalEffectiveDate: "",
+      legalTermsVersion: "1.0",
     },
   });
 
@@ -54,6 +61,12 @@ export default function AdminSettings() {
       songsPageSize: settingNumber(settings, "songs.page_size", 12),
       announcementsHomeLimit: settingNumber(settings, "announcements.home_limit", 3),
       showAnnouncementBanner: settingBoolean(settings, "announcements.show_banner", true),
+      legalEntityName: settingString(settings, "legal.entity_name", "Dalubhasaan ng Lungsod ng Lucena"),
+      legalContactEmail: settingString(settings, "legal.contact_email", ""),
+      legalDpoName: settingString(settings, "legal.dpo_name", ""),
+      legalAddress: settingString(settings, "legal.address", ""),
+      legalEffectiveDate: settingString(settings, "legal.effective_date", ""),
+      legalTermsVersion: settingString(settings, "legal.terms_version", "1.0"),
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings]);
@@ -69,6 +82,12 @@ export default function AdminSettings() {
         "songs.page_size": parsed.songsPageSize,
         "announcements.home_limit": parsed.announcementsHomeLimit,
         "announcements.show_banner": parsed.showAnnouncementBanner,
+        "legal.entity_name": parsed.legalEntityName,
+        "legal.contact_email": parsed.legalContactEmail,
+        "legal.dpo_name": parsed.legalDpoName,
+        "legal.address": parsed.legalAddress,
+        "legal.effective_date": parsed.legalEffectiveDate,
+        "legal.terms_version": parsed.legalTermsVersion,
       });
     },
     onSuccess: () => {
@@ -183,6 +202,62 @@ export default function AdminSettings() {
           </CardContent>
         </Card>
       </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Scale className="h-5 w-5 text-brass" aria-hidden /> Legal and privacy
+          </CardTitle>
+          <CardDescription>
+            These appear on the privacy notice, terms and copyright pages. The contact address is
+            how a member exercises their rights and how a rights holder asks for a takedown, so it
+            needs to be one somebody actually reads.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="grid gap-4 lg:grid-cols-2">
+          <Field
+            label="Legal entity name"
+            htmlFor="legal-entity"
+            error={errors.legalEntityName?.message}
+          >
+            <Input id="legal-entity" {...form.register("legalEntityName")} />
+          </Field>
+          <Field
+            label="Privacy contact email"
+            htmlFor="legal-email"
+            error={errors.legalContactEmail?.message}
+            hint="Shown on all three legal pages."
+          >
+            <Input id="legal-email" type="email" {...form.register("legalContactEmail")} />
+          </Field>
+          <Field
+            label="Data Protection Officer"
+            htmlFor="legal-dpo"
+            error={errors.legalDpoName?.message}
+            hint="Optional, but expected of institutions under RA 10173."
+          >
+            <Input id="legal-dpo" {...form.register("legalDpoName")} />
+          </Field>
+          <Field label="Postal address" htmlFor="legal-address" error={errors.legalAddress?.message}>
+            <Input id="legal-address" {...form.register("legalAddress")} />
+          </Field>
+          <Field
+            label="Effective date"
+            htmlFor="legal-date"
+            error={errors.legalEffectiveDate?.message}
+            hint="e.g. 1 September 2026."
+          >
+            <Input id="legal-date" {...form.register("legalEffectiveDate")} />
+          </Field>
+          <Field
+            label="Terms version"
+            htmlFor="legal-version"
+            error={errors.legalTermsVersion?.message}
+          >
+            <Input id="legal-version" {...form.register("legalTermsVersion")} />
+          </Field>
+        </CardContent>
+      </Card>
 
       <div className="flex justify-end border-t border-border pt-4">
         <Button type="submit" loading={save.isPending}>

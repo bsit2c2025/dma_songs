@@ -16,6 +16,14 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const ADMIN_PAGE_SIZE = 20;
 
 export const ACTIVITY_LABELS: Record<string, string> = {
+  "song.bulk_set_category": "Songs recategorised in bulk",
+  "song.bulk_enable": "Songs enabled in bulk",
+  "song.bulk_disable": "Songs disabled in bulk",
+  "song.bulk_delete": "Songs deleted in bulk",
+  "song.bulk_add_part": "Voice part added in bulk",
+  "song.bulk_remove_part": "Voice part removed in bulk",
+  "user.anonymized": "Member record erased",
+  "user.self_erased": "Member erased their own account",
   "voice_request.created": "Voice part change requested",
   "voice_request.approved": "Voice part change approved",
   "voice_request.rejected": "Voice part change declined",

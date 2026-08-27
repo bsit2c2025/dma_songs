@@ -9,14 +9,13 @@ const optionalText = (max: number) =>
     .optional()
     .transform((v) => (v && v.length > 0 ? v : null));
 
+export const voiceFamilySchema = z.enum(["soprano", "alto", "tenor", "bass"]);
+
 export const songVideoSchema = z.object({
   id: z.string().uuid().optional(),
-  voiceClassificationId: z
-    .string()
-    .uuid()
-    .nullable()
-    .default(null)
-    .describe("null = a general video for the whole ensemble"),
+  /** Exactly one of these is set; both null means a full-ensemble recording. */
+  voiceClassificationId: z.string().uuid().nullable().default(null),
+  voiceFamily: voiceFamilySchema.nullable().default(null),
   url: z
     .string()
     .trim()
@@ -44,27 +43,94 @@ export const songFormSchema = z
       .or(z.literal(""))
       .transform((v) => (v ? v : null)),
     status: z.enum(["active", "disabled"]).default("active"),
-    voiceClassificationIds: z
-      .array(z.string().uuid())
-      .min(1, "Pick at least one voice part."),
+
+    /**
+     * "simple" files the song against whole families (SATB); "detailed" against
+     * the eight divided parts. Either way the database stores divided parts, so
+     * this only decides which editor is shown.
+     */
+    partMode: z.enum(["simple", "detailed"]).default("detailed"),
+    voiceFamilies: z.array(voiceFamilySchema).default([]),
+    voiceClassificationIds: z.array(z.string().uuid()).default([]),
+
+    // Copyright provenance. Required before lyrics can be stored.
+    rightsConfirmed: z.boolean().default(false),
+    rightsBasis: z
+      .enum(["public_domain", "owned", "licensed", "permission", "other"])
+      .nullable()
+      .default(null),
+    rightsHolder: optionalText(200),
+    rightsNote: optionalText(1000),
+
     videos: z.array(songVideoSchema).default([]),
   })
   .superRefine((value, ctx) => {
-    // One video per part: the database enforces this too, but catching it here
-    // gives the admin a field-level message instead of a 409.
+    // At least one part, expressed whichever way this song is filed.
+    if (value.partMode === "simple" && value.voiceFamilies.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["voiceFamilies"],
+        message: "Pick at least one voice — SATB covers the usual case.",
+      });
+    }
+    if (value.partMode === "detailed" && value.voiceClassificationIds.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["voiceClassificationIds"],
+        message: "Pick at least one voice part.",
+      });
+    }
+
+    // Storing somebody else's lyrics on our own server is the real copyright
+    // exposure here, so it needs an explicit answer rather than a default.
+    if (value.lyrics && value.lyrics.trim().length > 0) {
+      if (!value.rightsConfirmed) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rightsConfirmed"],
+          message: "Confirm where these lyrics came from before saving them.",
+        });
+      }
+      if (!value.rightsBasis) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rightsBasis"],
+          message: "Say what gives us the right to store these lyrics.",
+        });
+      }
+      if (value.rightsBasis === "other" && !value.rightsNote) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["rightsNote"],
+          message: "Explain the arrangement, since it isn't one of the listed cases.",
+        });
+      }
+    }
+
+    // One video per target. The database enforces this too; catching it here
+    // gives a field-level message instead of a 409.
     const seen = new Set<string>();
     value.videos.forEach((video, index) => {
-      const key = video.voiceClassificationId ?? "general";
+      const key = video.voiceClassificationId ?? video.voiceFamily ?? "general";
       if (seen.has(key)) {
         ctx.addIssue({
           code: z.ZodIssueCode.custom,
           path: ["videos", index, "voiceClassificationId"],
-          message: "There's already a video for this part. Edit that one instead.",
+          message: "There's already a video for this. Edit that one instead.",
         });
       }
       seen.add(key);
 
+      if (video.voiceClassificationId && video.voiceFamily) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["videos", index, "voiceClassificationId"],
+          message: "A video is for one part or one voice, not both.",
+        });
+      }
+
       if (
+        value.partMode === "detailed" &&
         video.voiceClassificationId &&
         !value.voiceClassificationIds.includes(video.voiceClassificationId)
       ) {
@@ -72,6 +138,18 @@ export const songFormSchema = z
           code: z.ZodIssueCode.custom,
           path: ["videos", index, "voiceClassificationId"],
           message: "Add this part to the song first.",
+        });
+      }
+
+      if (
+        value.partMode === "simple" &&
+        video.voiceFamily &&
+        !value.voiceFamilies.includes(video.voiceFamily)
+      ) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ["videos", index, "voiceClassificationId"],
+          message: "Add this voice to the song first.",
         });
       }
     });
