@@ -2,7 +2,8 @@ import * as React from "react";
 import { Link } from "react-router-dom";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import {
-  Eye, EyeOff, FolderInput, MoreHorizontal, Music4, Pencil, Plus, SearchX, Trash2, Video,
+  Eye, EyeOff, FolderInput, MoreHorizontal, Music4, Pencil, Plus, SearchX, ShieldAlert,
+  Trash2, Video,
 } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
@@ -336,6 +337,11 @@ export default function AdminSongs() {
                         {[song.composer, song.arranger].filter(Boolean).join(" • ") || "No credits"}
                         {song.category ? ` · ${song.category}` : ""}
                       </p>
+                      {song.lyrics && !song.rights_confirmed ? (
+                        <span className="mt-1 inline-flex items-center gap-1 rounded bg-destructive/10 px-1.5 py-0.5 text-[0.7rem] font-semibold text-destructive">
+                          <ShieldAlert className="h-3 w-3" aria-hidden /> Rights not confirmed
+                        </span>
+                      ) : null}
                     </TableCell>
                     <TableCell className="hidden md:table-cell">
                       <div className="flex flex-wrap gap-1">

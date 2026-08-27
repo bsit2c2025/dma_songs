@@ -64,15 +64,28 @@ begin
   end if;
 end $$;
 
--- Replace the old one-video-per-part index with one that also accounts for
--- family-level and full-ensemble videos.
+-- Replace the old one-video-per-part index with three partial indexes that
+-- also cover family-level and full-ensemble videos.
+--
+-- The obvious single index — coalescing both columns to text — will not
+-- build: casting an enum to text is only STABLE, not IMMUTABLE, because enum
+-- labels can be renamed, and an index expression has to be IMMUTABLE. Three
+-- partial indexes avoid the cast entirely and say the rule more plainly
+-- anyway: one video per divided part, one per whole voice, one for everyone.
 drop index if exists song_videos_song_part_uniq;
-create unique index if not exists song_videos_song_target_unique
-  on public.song_videos (
-    song_id,
-    coalesce(voice_classification_id::text, ''),
-    coalesce(voice_family::text, '')
-  );
+drop index if exists song_videos_song_target_unique;
+
+create unique index if not exists song_videos_one_per_part
+  on public.song_videos (song_id, voice_classification_id)
+  where voice_classification_id is not null;
+
+create unique index if not exists song_videos_one_per_family
+  on public.song_videos (song_id, voice_family)
+  where voice_family is not null;
+
+create unique index if not exists song_videos_one_general
+  on public.song_videos (song_id)
+  where voice_classification_id is null and voice_family is null;
 
 -- ---------------------------------------------------------------------------
 -- 2. Copyright provenance on songs
@@ -99,6 +112,13 @@ begin
   end if;
   -- Lyrics require a confirmation. Everything else about a song is fine
   -- without one.
+  --
+  -- Added NOT VALID on purpose. Songs that already carry lyrics predate this
+  -- rule and would fail validation, and the wrong way to fix that is to
+  -- auto-confirm their rights — that is precisely the assertion nobody has
+  -- actually made yet. So existing rows are left alone and flagged in the
+  -- admin song list, while every new write, and any edit to an old row, has
+  -- to answer the question.
   if not exists (select 1 from pg_constraint where conname = 'songs_lyrics_need_rights') then
     alter table public.songs
       add constraint songs_lyrics_need_rights
@@ -106,7 +126,7 @@ begin
         lyrics is null
         or btrim(lyrics) = ''
         or (rights_confirmed and rights_basis is not null)
-      );
+      ) not valid;
   end if;
 end $$;
 

@@ -75,10 +75,10 @@ export default function AdminSettings() {
     mutationFn: (parsed: SettingsFormOutput) => {
       return saveSettings({
         "app.name": parsed.appName,
-        "app.tagline": parsed.tagline || null,
-        "app.organization": parsed.organization || null,
+        "app.tagline": parsed.tagline ?? "",
+        "app.organization": parsed.organization ?? "",
         "app.logo_url": parsed.logoUrl || "/logo.svg",
-        "app.contact_email": parsed.contactEmail || null,
+        "app.contact_email": parsed.contactEmail ?? "",
         "songs.page_size": parsed.songsPageSize,
         "announcements.home_limit": parsed.announcementsHomeLimit,
         "announcements.show_banner": parsed.showAnnouncementBanner,
