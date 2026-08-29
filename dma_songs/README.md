@@ -115,6 +115,7 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0010_events_membership.sql` | Super admins, member approval, members-only music, events |
 | `0011_event_manager.sql` | Deactivation reasons, admin-managed attendance, event guests |
 | `0012_onboarding.sql` | First-run welcome flow, and cleanup of parts nobody chose |
+| `0013_realtime.sql` | Live updates for songs and announcements |
 
 Each file is safe to re-run.
 
@@ -182,6 +183,26 @@ From then on, use **Admin → Members → Make administrator**. The database ref
 remaining administrator, so you cannot lock yourself out.
 
 ---
+
+## Keeping devices in step
+
+Two tables replicate live: **songs** and **announcements** (which is also where events live). When an
+administrator adds, edits or deletes one, every signed-in device refetches within a second or two —
+no hard refresh.
+
+A realtime message only ever says *something changed*; the payload is never written into the cache.
+The refetch goes back through the ordinary policies, so realtime can never become a second, weaker
+route to data somebody shouldn't see.
+
+Beyond that, returning to the app or reconnecting after losing signal refetches automatically, and
+the song and announcement pages carry an **"Updated 2 minutes ago · Refresh"** line for when
+somebody doesn't trust what they're looking at.
+
+**Scope is deliberately narrow.** Each replicated table costs an open message stream per connected
+device, and the free tier caps connections and throughput. Only signed-in members subscribe — a
+visitor reading the landing page holds no connection. Adding tables here out of habit is how a free
+project runs out of headroom, so add one only when staleness is a problem somebody has actually
+reported.
 
 ## Super administrators
 

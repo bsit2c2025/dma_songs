@@ -3,6 +3,7 @@ import { useSearchParams } from "react-router-dom";
 import { Music4, SearchX, SlidersHorizontal } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SearchInput } from "@/components/common/SearchInput";
+import { FreshnessBar } from "@/components/common/FreshnessBar";
 import { SongCard, SongCardSkeleton } from "@/components/common/SongCard";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
@@ -112,6 +113,8 @@ export default function Songs() {
             : "Everything in the library. Narrow it to a single part with the filter below."
         }
       />
+
+      <FreshnessBar className="justify-end" />
 
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
         <SearchInput

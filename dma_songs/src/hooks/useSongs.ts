@@ -7,7 +7,7 @@ export function useSongs(params: SongListParams) {
     queryKey: params.includeDisabled ? queryKeys.adminSongs(params) : queryKeys.songs(params),
     queryFn: () => listSongs(params),
     placeholderData: (previous) => previous,
-    staleTime: 30 * 1000,
+    staleTime: 10 * 1000,
   });
 }
 

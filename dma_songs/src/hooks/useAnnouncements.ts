@@ -11,7 +11,10 @@ export function useLiveAnnouncements(limit?: number) {
   return useQuery({
     queryKey: queryKeys.announcements({ live: true, limit }),
     queryFn: () => listLiveAnnouncements(limit),
-    staleTime: 60 * 1000,
+    // Kept short: announcements are the thing people complained about not
+    // seeing. Realtime handles the live case; this covers a device that was
+    // asleep when the message went out.
+    staleTime: 10 * 1000,
   });
 }
 

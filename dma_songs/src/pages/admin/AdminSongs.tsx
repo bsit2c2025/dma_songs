@@ -8,6 +8,7 @@ import {
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SearchInput } from "@/components/common/SearchInput";
+import { FreshnessBar } from "@/components/common/FreshnessBar";
 import { EmptyState } from "@/components/common/EmptyState";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Pagination } from "@/components/common/Pagination";
@@ -165,6 +166,8 @@ export default function AdminSongs() {
           </Button>
         }
       />
+
+      <FreshnessBar className="justify-end" />
 
       <BulkActionBar count={selectedIds.length} onClear={clearSelection}>
         <Button size="sm" variant="outline" onClick={() => setCategoryOpen(true)}>

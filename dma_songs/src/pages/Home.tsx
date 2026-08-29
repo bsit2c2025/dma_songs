@@ -6,6 +6,7 @@ import { AnnouncementCard } from "@/components/common/AnnouncementCard";
 import { EventCard } from "@/components/common/EventCard";
 import { VoicePartPicker } from "@/components/common/VoicePartPicker";
 import { EmptyState } from "@/components/common/EmptyState";
+import { FreshnessBar } from "@/components/common/FreshnessBar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -152,6 +153,7 @@ export default function Home() {
           <h2 id="announcements-heading" className="text-2xl">
             Announcements
           </h2>
+          <FreshnessBar />
           <Button asChild variant="ghost" size="sm">
             <Link to="/announcements">See all</Link>
           </Button>

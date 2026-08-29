@@ -11,6 +11,7 @@ import { FullPageLoader } from "@/components/common/FullPageLoader";
 import { AppErrorBoundary } from "@/components/common/AppErrorBoundary";
 import { StorageNotice } from "@/components/common/StorageNotice";
 import { useFavicon } from "@/hooks/useFavicon";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 
 // Eager: the landing page everyone sees first.
 import Home from "@/pages/Home";
@@ -56,8 +57,18 @@ const queryClient = new QueryClient({
         if (code === "42501" || code === "PGRST301") return false;
         return failureCount < 2;
       },
-      refetchOnWindowFocus: false,
-      staleTime: 30 * 1000,
+
+      // Coming back to the app should show current data. This was off, which
+      // is why a phone left open on the song list kept showing a song that had
+      // been deleted on somebody's laptop an hour earlier.
+      refetchOnWindowFocus: true,
+      // A phone that loses signal in a rehearsal hall and picks it up again
+      // should not have to be reopened to catch up.
+      refetchOnReconnect: true,
+
+      // Short enough that a returning tab refetches, long enough that moving
+      // between pages does not re-request the same list every time.
+      staleTime: 10 * 1000,
     },
   },
 });
@@ -67,6 +78,7 @@ const queryClient = new QueryClient({
  */
 function Chrome() {
   useFavicon();
+  useRealtimeSync();
   return null;
 }
 
