@@ -1,7 +1,6 @@
 import * as React from "react";
 import { Check, Clock, Loader2, X } from "lucide-react";
 import { useVoicePart } from "@/features/voice/VoicePartProvider";
-import { useAuth } from "@/features/auth/AuthProvider";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -24,7 +23,6 @@ import type { VoiceClassification } from "@/types/models";
 export function VoicePartPicker() {
   const { parts, myPart, myPartId, isFirstChoice, pendingRequest, isLoading, isSubmitting, choosePart, cancelRequest } =
     useVoicePart();
-  const { status } = useAuth();
   const [confirming, setConfirming] = React.useState<VoiceClassification | null>(null);
   const [note, setNote] = React.useState("");
 
@@ -42,7 +40,7 @@ export function VoicePartPicker() {
 
   function handleClick(part: VoiceClassification) {
     if (part.id === myPartId) return;
-    if (isFirstChoice || status !== "authenticated") {
+    if (isFirstChoice) {
       void choosePart(part.id);
       return;
     }
@@ -127,9 +125,7 @@ export function VoicePartPicker() {
 
       {!myPart && !pendingRequest ? (
         <p className="text-sm text-muted-foreground">
-          {status === "authenticated"
-            ? "Pick your part — your first choice is applied straight away."
-            : "Pick your part. Sign in to save it to your account."}
+          Pick your part — your first choice is applied straight away.
         </p>
       ) : null}
 

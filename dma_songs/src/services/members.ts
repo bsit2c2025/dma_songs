@@ -103,7 +103,20 @@ export async function setMemberVoiceClassification(userId: string, voiceClassifi
   if (error) throw error;
 }
 
-export async function setMemberActive(userId: string, isActive: boolean) {
+/**
+ * Deactivation goes through the RPC because it requires a reason, and the
+ * reason is shown to the member. A bare column update could skip it.
+ */
+export async function setMemberActive(userId: string, isActive: boolean, reason?: string) {
+  const { error } = await supabase.rpc("admin_set_member_active", {
+    p_user_id: userId,
+    p_active: isActive,
+    p_reason: reason ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function setMemberActiveLegacy(userId: string, isActive: boolean) {
   const { error } = await supabase.from("profiles").update({ is_active: isActive }).eq("id", userId);
   if (error) throw error;
 }

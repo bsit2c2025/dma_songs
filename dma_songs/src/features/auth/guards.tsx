@@ -50,6 +50,12 @@ export function RequireApprovedMember() {
     return <Navigate to="/login" state={{ from: location.pathname }} replace />;
   }
 
+  // Deactivation comes first: telling somebody their account is off is more
+  // use than telling them it is unapproved when it was approved months ago.
+  if (profile && !profile.is_active) {
+    return <Navigate to="/deactivated" replace />;
+  }
+
   if (!profile?.approved_at) {
     return <Navigate to="/pending" replace />;
   }

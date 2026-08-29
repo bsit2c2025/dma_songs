@@ -18,6 +18,8 @@ import Home from "@/pages/Home";
 const Songs = React.lazy(() => import("@/pages/Songs"));
 const SongDetail = React.lazy(() => import("@/pages/SongDetail"));
 const PendingApproval = React.lazy(() => import("@/pages/PendingApproval"));
+const Deactivated = React.lazy(() => import("@/pages/Deactivated"));
+const AdminEvents = React.lazy(() => import("@/pages/admin/AdminEvents"));
 const AdminEventAttendance = React.lazy(() => import("@/pages/admin/AdminEventAttendance"));
 
 // Lazy: everything else, so a guest never downloads the dashboard.
@@ -84,6 +86,7 @@ export default function App() {
                   <Route element={<PublicLayout />}>
                     <Route index element={<Home />} />
                     <Route path="/pending" element={<PendingApproval />} />
+                    <Route path="/deactivated" element={<Deactivated />} />
 
                     {/* The music is members-only. The database enforces it;
                         this just redirects rather than showing an empty page. */}
@@ -117,6 +120,7 @@ export default function App() {
                       <Route path="announcements/:id/edit" element={<AdminAnnouncementEditor />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="voice-requests" element={<AdminVoiceRequests />} />
+                      <Route path="events" element={<AdminEvents />} />
                       <Route path="events/:id" element={<AdminEventAttendance />} />
                       <Route path="voice-classifications" element={<AdminVoiceClassifications />} />
                       <Route path="settings" element={<AdminSettings />} />

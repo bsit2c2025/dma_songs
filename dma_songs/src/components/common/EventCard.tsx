@@ -71,6 +71,8 @@ export function EventCard({ event, compact = false }: { event: Announcement; com
 
   const start = event.event_starts_at ? new Date(event.event_starts_at) : null;
   const isPast = start ? start.getTime() < Date.now() : false;
+  const closed = event.rsvp_deadline ? new Date(event.rsvp_deadline).getTime() < Date.now() : false;
+  const lockedByAdmin = Boolean(mine.data?.set_by_admin);
 
   return (
     <Card className={cn("overflow-hidden", event.is_pinned && "border-brass/50")}>
@@ -129,6 +131,21 @@ export function EventCard({ event, compact = false }: { event: Announcement; com
                 <p className="text-sm font-medium">
                   {isPast ? "Were you there?" : "Are you coming?"}
                 </p>
+                {lockedByAdmin ? (
+                  <p className="text-xs text-muted-foreground">
+                    An administrator recorded your reply for this event. Ask them if it needs
+                    changing.
+                  </p>
+                ) : closed ? (
+                  <p className="text-xs text-muted-foreground">
+                    Replies closed on {formatDateTime(event.rsvp_deadline!)}. Speak to an
+                    administrator if something has changed.
+                  </p>
+                ) : event.rsvp_deadline ? (
+                  <p className="text-xs text-muted-foreground">
+                    Please answer by {formatDateTime(event.rsvp_deadline)}.
+                  </p>
+                ) : null}
                 <div className="flex flex-wrap gap-2">
                   {CHOICES.map((choice) => {
                     const active = mine.data?.status === choice.value;
@@ -137,7 +154,7 @@ export function EventCard({ event, compact = false }: { event: Announcement; com
                         key={choice.value}
                         size="sm"
                         variant={active ? "default" : "outline"}
-                        disabled={respond.isPending}
+                        disabled={respond.isPending || closed || lockedByAdmin}
                         onClick={() => respond.mutate(choice.value)}
                       >
                         {choice.icon} {choice.label}

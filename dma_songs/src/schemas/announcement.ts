@@ -56,6 +56,7 @@ export const announcementFormSchema = z
     dressCode: z.string().trim().max(300).optional().transform((v) => (v && v.length ? v : null)),
     whatToBring: z.string().trim().max(400).optional().transform((v) => (v && v.length ? v : null)),
     collectRsvp: z.boolean().default(true),
+    rsvpDeadline: z.string().nullable().default(null),
   })
   .superRefine((value, ctx) => {
     if (value.isEvent && !value.eventStartsAt) {

@@ -113,6 +113,7 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0008_voice_change_requests.sql` | Admin-approved voice part changes |
 | `0009_privacy_families_bulk.sql` | SATB voices, bulk song actions, member admin, privacy fields |
 | `0010_events_membership.sql` | Super admins, member approval, members-only music, events |
+| `0011_event_manager.sql` | Deactivation reasons, admin-managed attendance, event guests |
 
 Each file is safe to re-run.
 
@@ -343,6 +344,23 @@ orders the rest.
 **Changing the branding.** Admin → Settings. The application name, tagline, organization, contact
 email and logo all live in the database, so no redeploy is needed. Upload the logo there or drop the
 file at `public/logo.svg`.
+
+**Managing an event.** Admin → Events lists every event with four numbers: going, not sure, can't,
+and **no reply** — the last being the one worth acting on. Open one and you get three tabs:
+
+- **Replies** — change anybody's status. An entry you set is marked *set by admin* and the member
+  can no longer overwrite it, because the reason it exists is that they told you something outside
+  the app. Clearing it hands the question back to them.
+- **No reply** — approved members with nothing on record, with one-click Going / Can't.
+- **Guests** — alumni and visiting singers who have no account and shouldn't need one to appear on a
+  call sheet.
+
+An event can have an **RSVP deadline**. After it passes members can't change their answer but
+administrators still can, and that is checked in the database rather than by a disabled button.
+
+**Deactivating a member.** A reason is required, and the member is shown it on a page of their own
+rather than finding the library silently closed. Reactivating clears the reason; the activity log
+keeps the history.
 
 **Voice part changes.** A member's *first* choice applies immediately — nothing to approve. Any move
 afterwards becomes a request that waits in Admin → Voice requests, where the sidebar carries a count

@@ -62,6 +62,9 @@ export interface Database {
           terms_version: string | null;
           anonymized_at: string | null;
           approved_at: string | null;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
+          deactivation_reason: string | null;
           approved_by: string | null;
           rejected_at: string | null;
           approval_note: string | null;
@@ -182,6 +185,7 @@ export interface Database {
           dress_code: string | null;
           what_to_bring: string | null;
           collect_rsvp: boolean;
+          rsvp_deadline: string | null;
           priority: number;
           starts_at: string | null;
           ends_at: string | null;
@@ -208,6 +212,7 @@ export interface Database {
           dress_code?: string | null;
           what_to_bring?: string | null;
           collect_rsvp?: boolean;
+          rsvp_deadline?: string | null;
           priority?: number;
           starts_at?: string | null;
           ends_at?: string | null;
@@ -261,6 +266,9 @@ export interface Database {
           user_id: string;
           status: AttendanceStatus;
           note: string | null;
+          set_by_admin: boolean;
+          set_by: string | null;
+          admin_note: string | null;
           updated_at: string;
         };
         Insert: {
@@ -270,6 +278,36 @@ export interface Database {
           note?: string | null;
         };
         Update: { status?: AttendanceStatus; note?: string | null };
+        Relationships: [];
+      };
+      event_guests: {
+        Row: {
+          id: string;
+          announcement_id: string;
+          name: string;
+          role: string | null;
+          voice_classification_id: string | null;
+          status: AttendanceStatus;
+          note: string | null;
+          added_by: string | null;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          announcement_id: string;
+          name: string;
+          role?: string | null;
+          voice_classification_id?: string | null;
+          status?: AttendanceStatus;
+          note?: string | null;
+        };
+        Update: {
+          name?: string;
+          role?: string | null;
+          voice_classification_id?: string | null;
+          status?: AttendanceStatus;
+          note?: string | null;
+        };
         Relationships: [];
       };
       activity_logs: {
@@ -327,6 +365,26 @@ export interface Database {
       };
       pending_voice_request_count: { Args: Record<string, never>; Returns: number };
       pending_member_count: { Args: Record<string, never>; Returns: number };
+      admin_set_member_active: {
+        Args: { p_user_id: string; p_active: boolean; p_reason?: string | null };
+        Returns: void;
+      };
+      admin_set_attendance: {
+        Args: {
+          p_announcement_id: string;
+          p_user_id: string;
+          p_status: AttendanceStatus;
+          p_note?: string | null;
+        };
+        Returns: void;
+      };
+      admin_clear_attendance: { Args: { p_announcement_id: string; p_user_id: string }; Returns: void };
+      set_my_attendance: {
+        Args: { p_announcement_id: string; p_status: AttendanceStatus; p_note?: string | null };
+        Returns: void;
+      };
+      event_non_responders: { Args: { p_announcement_id: string }; Returns: Json };
+      admin_event_list: { Args: { p_include_past?: boolean }; Returns: Json };
       admin_set_member_approval: {
         Args: { p_user_id: string; p_approve: boolean; p_note?: string | null };
         Returns: void;

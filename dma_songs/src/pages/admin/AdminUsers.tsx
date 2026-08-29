@@ -10,6 +10,11 @@ import { Pagination } from "@/components/common/Pagination";
 import { ConfirmDialog } from "@/components/common/ConfirmDialog";
 import { VoicePartChip } from "@/components/common/VoicePartChip";
 import { MemberSheet } from "@/components/common/MemberSheet";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
+import {
+  Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle,
+} from "@/components/ui/dialog";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,10 +97,16 @@ export default function AdminUsers() {
     onError: (error) => toast.error(errorMessage(error, "That change didn't save.")),
   });
 
+  const [deactivating, setDeactivating] = React.useState<MemberSummary | null>(null);
+  const [reason, setReason] = React.useState("");
+
   const changeActive = useMutation({
-    mutationFn: ({ id, active }: { id: string; active: boolean }) => setMemberActive(id, active),
+    mutationFn: ({ id, active, why }: { id: string; active: boolean; why?: string }) =>
+      setMemberActive(id, active, why),
     onSuccess: (_data, variables) => {
       invalidate();
+      setDeactivating(null);
+      setReason("");
       toast.success(variables.active ? "Member reactivated" : "Member deactivated");
     },
     onError: (error) => toast.error(errorMessage(error, "That change didn't save.")),
@@ -306,9 +317,14 @@ export default function AdminUsers() {
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
                               disabled={isSelf || (protectedIds.has(member.id) && !amSuperAdmin)}
-                              onSelect={() =>
-                                changeActive.mutate({ id: member.id, active: !member.is_active })
-                              }
+                              onSelect={() => {
+                                if (member.is_active) {
+                                  setReason("");
+                                  setDeactivating(member);
+                                } else {
+                                  changeActive.mutate({ id: member.id, active: true });
+                                }
+                              }}
                             >
                               {member.is_active ? "Deactivate account" : "Reactivate account"}
                             </DropdownMenuItem>
@@ -347,6 +363,47 @@ export default function AdminUsers() {
         onPageChange={setPage}
         label="members"
       />
+
+      <Dialog open={Boolean(deactivating)} onOpenChange={(open) => !open && setDeactivating(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>
+              Deactivate {deactivating?.display_name || deactivating?.email}?
+            </DialogTitle>
+            <DialogDescription>
+              They keep their account but lose the music library and events. They will be shown the
+              reason you give here, so write it for them rather than for your own notes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-1.5">
+            <Label htmlFor="deactivation-reason">Reason</Label>
+            <Textarea
+              id="deactivation-reason"
+              rows={3}
+              maxLength={500}
+              value={reason}
+              onChange={(event) => setReason(event.target.value)}
+              placeholder="On leave for the semester. Message the director when you're back."
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDeactivating(null)}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              loading={changeActive.isPending}
+              disabled={!reason.trim()}
+              onClick={() =>
+                deactivating &&
+                changeActive.mutate({ id: deactivating.id, active: false, why: reason })
+              }
+            >
+              Deactivate
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <MemberSheet
         member={managing}

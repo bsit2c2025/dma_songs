@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { Activity, Megaphone, Music4, Plus, Users, Video } from "lucide-react";
+import { Activity, CalendarDays, Megaphone, Music4, Plus, Users, Video, Zap } from "lucide-react";
 import { PageHeader } from "@/components/common/PageHeader";
 import { ErrorState } from "@/components/common/ErrorState";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -60,6 +60,41 @@ export default function Dashboard() {
           </>
         }
       />
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5 text-brass" aria-hidden /> Quick actions
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex flex-wrap gap-2">
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/events">
+              <CalendarDays aria-hidden /> Manage events
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/songs">
+              <Music4 aria-hidden /> Manage songs
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/announcements">
+              <Megaphone aria-hidden /> Manage announcements
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/admin/users">
+              <Users aria-hidden /> Members
+            </Link>
+          </Button>
+          <Button asChild variant="outline" size="sm">
+            <Link to="/songs">
+              <Video aria-hidden /> View the member library
+            </Link>
+          </Button>
+        </CardContent>
+      </Card>
 
       {stats.isLoading || !data ? (
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
@@ -163,35 +198,6 @@ export default function Dashboard() {
         </Card>
       </div>
 
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="h-5 w-5 text-brass" aria-hidden /> Quick actions
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="flex flex-wrap gap-2">
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/songs">
-              <Music4 aria-hidden /> Manage songs
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/announcements">
-              <Megaphone aria-hidden /> Manage announcements
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/admin/users">
-              <Users aria-hidden /> Members
-            </Link>
-          </Button>
-          <Button asChild variant="outline" size="sm">
-            <Link to="/songs">
-              <Video aria-hidden /> View the member library
-            </Link>
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

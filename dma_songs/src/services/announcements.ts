@@ -93,6 +93,7 @@ function toRow(values: AnnouncementFormOutput) {
     dress_code: values.isEvent ? values.dressCode : null,
     what_to_bring: values.isEvent ? values.whatToBring : null,
     collect_rsvp: values.isEvent ? values.collectRsvp : false,
+    rsvp_deadline: values.isEvent ? values.rsvpDeadline : null,
   };
 }
 

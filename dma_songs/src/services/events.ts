@@ -8,6 +8,9 @@ export interface AttendanceRow {
   user_id: string;
   status: AttendanceStatus;
   note: string | null;
+  set_by_admin: boolean;
+  set_by: string | null;
+  admin_note: string | null;
   updated_at: string;
   profile: {
     id: string;
@@ -62,21 +65,24 @@ export async function getMyAttendance(
   return data ?? null;
 }
 
+/**
+ * A member answering for themselves.
+ *
+ * Goes through the RPC rather than a direct upsert so the RSVP deadline is
+ * checked in the database. A deadline enforced only by a disabled button is
+ * not a deadline.
+ */
 export async function setMyAttendance(
   announcementId: string,
-  userId: string,
+  _userId: string,
   status: AttendanceStatus,
   note?: string | null,
 ) {
-  const { error } = await supabase.from("event_attendance").upsert(
-    {
-      announcement_id: announcementId,
-      user_id: userId,
-      status,
-      note: note?.trim() || null,
-    },
-    { onConflict: "announcement_id,user_id" },
-  );
+  const { error } = await supabase.rpc("set_my_attendance", {
+    p_announcement_id: announcementId,
+    p_status: status,
+    p_note: note ?? null,
+  });
   if (error) throw error;
 }
 

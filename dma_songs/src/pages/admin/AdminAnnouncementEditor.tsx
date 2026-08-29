@@ -49,6 +49,7 @@ const EMPTY: AnnouncementFormValues = {
   dressCode: "",
   whatToBring: "",
   collectRsvp: true,
+  rsvpDeadline: null,
 };
 
 export default function AdminAnnouncementEditor() {
@@ -90,6 +91,7 @@ export default function AdminAnnouncementEditor() {
       dressCode: announcement.dress_code ?? "",
       whatToBring: announcement.what_to_bring ?? "",
       collectRsvp: announcement.collect_rsvp,
+      rsvpDeadline: announcement.rsvp_deadline,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
@@ -227,6 +229,7 @@ export default function AdminAnnouncementEditor() {
                   dress_code: values.dressCode || null,
                   what_to_bring: values.whatToBring || null,
                   collect_rsvp: values.collectRsvp ?? true,
+                  rsvp_deadline: values.rsvpDeadline ?? null,
                   isLive: true,
                 }}
               />
@@ -372,6 +375,24 @@ export default function AdminAnnouncementEditor() {
                       rows={2}
                       placeholder="Folder, water bottle, ID."
                       {...form.register("whatToBring")}
+                    />
+                  </Field>
+
+                  <Field
+                    label="Replies close"
+                    htmlFor="rsvp-deadline"
+                    error={errors.rsvpDeadline?.message}
+                    hint="Optional. After this, members can't change their answer but you still can."
+                  >
+                    <Input
+                      id="rsvp-deadline"
+                      type="datetime-local"
+                      value={toLocalInputValue(values.rsvpDeadline)}
+                      onChange={(event) =>
+                        form.setValue("rsvpDeadline", fromLocalInputValue(event.target.value), {
+                          shouldDirty: true,
+                        })
+                      }
                     />
                   </Field>
 

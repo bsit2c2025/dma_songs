@@ -1,7 +1,7 @@
 import * as React from "react";
 import { Link, NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import {
-  Activity, ChevronLeft, Inbox, LayoutDashboard, LogOut, Megaphone, Menu, Music4,
+  Activity, CalendarDays, ChevronLeft, Inbox, LayoutDashboard, LogOut, Megaphone, Menu, Music4,
   Settings, Users, Waves, X, UserRound,
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -28,6 +28,7 @@ const SECTIONS = [
     items: [
       { to: "/admin/songs", label: "Songs", icon: Music4, end: false },
       { to: "/admin/announcements", label: "Announcements", icon: Megaphone, end: false },
+      { to: "/admin/events", label: "Events", icon: CalendarDays, end: false },
     ],
   },
   {

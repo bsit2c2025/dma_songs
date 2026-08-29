@@ -56,10 +56,13 @@ export function PublicLayout() {
       </a>
 
       <header className="sticky top-0 z-40 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80">
-        <div className="container flex h-16 items-center justify-between gap-4">
-          <Logo />
+        <div className="container flex h-16 items-center justify-between gap-2 sm:gap-4">
+          {/* min-w-0 lets the wordmark truncate instead of widening the row. */}
+          <div className="min-w-0 flex-1">
+            <Logo />
+          </div>
 
-          <nav className="hidden items-center gap-1 md:flex" aria-label="Main">
+          <nav className="hidden shrink-0 items-center gap-1 md:flex" aria-label="Main">
             {NAV.map((item) => (
               <NavLink
                 key={item.to}
@@ -77,8 +80,8 @@ export function PublicLayout() {
             ))}
           </nav>
 
-          <div className="flex items-center gap-2">
-            {myPart ? (
+          <div className="flex shrink-0 items-center gap-2">
+            {myPart && status === "authenticated" ? (
               <Link to="/songs" className="hidden sm:block" aria-label={`Your part: ${myPart.name}. Browse songs.`}>
                 <VoicePartChip part={myPart} size="md" />
               </Link>
@@ -222,8 +225,10 @@ export function PublicLayout() {
 
       <footer className="mt-8 border-t border-border bg-card">
         <div className="container flex flex-col gap-4 py-8 sm:flex-row sm:items-center sm:justify-between">
-          <Logo size="sm" />
-          <div className="flex flex-col gap-1 text-sm text-muted-foreground sm:items-end">
+          <div className="min-w-0">
+            <Logo size="sm" />
+          </div>
+          <div className="flex min-w-0 flex-col gap-2 text-sm text-muted-foreground sm:items-end">
             <p>
               © {new Date().getFullYear()} DLL Music and Arts. Music and arrangements remain the
               property of their rights holders.

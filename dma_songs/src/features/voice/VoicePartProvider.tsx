@@ -54,19 +54,21 @@ function writeStored(id: string | null) {
 
 /**
  * A member's voice part is their section, decided once and then changed only
- * with an administrator's approval. It is deliberately no longer the same
- * thing as the library filter: browsing another section's music is useful and
- * harmless, so the filter lives in the page's URL and this provider only
- * tracks who you actually are.
+ * with an administrator's approval. It is deliberately not the same thing as
+ * the library filter: browsing another section's music is useful and harmless,
+ * so the filter lives in the page's URL and this provider only tracks who you
+ * actually are.
  *
- * Guests have nobody to approve them, so their choice stays in localStorage
- * and is adopted onto their profile the first time they sign in.
+ * Guests no longer have a voice part at all. They once did — the choice lived
+ * in localStorage and filtered the library — but the library is members-only
+ * now, so a guest picking a section chose nothing, while the header still
+ * showed their chip next to the sign-in button as though they had an account.
+ * A setting that does nothing is worse than no setting.
  */
 export function VoicePartProvider({ children }: { children: React.ReactNode }) {
   const { data: parts = [], isLoading } = useVoiceClassifications();
   const { profile, status, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
-  const [guestId, setGuestId] = React.useState<string | null>(() => readStored());
   const adoptedRef = React.useRef<string | null>(null);
 
   const profileVoiceId = profile?.voice_classification_id ?? null;
@@ -79,35 +81,32 @@ export function VoicePartProvider({ children }: { children: React.ReactNode }) {
     staleTime: 15_000,
   });
 
-  // Adopt a guest's choice onto their profile the first time they sign in.
+  // One-time cleanup: adopt anything a guest chose under the old behaviour,
+  // then stop keeping it. After this runs once per browser the key is gone.
   React.useEffect(() => {
     if (!isMember || !profile) return;
-    if (profileVoiceId) {
-      writeStored(profileVoiceId);
-      return;
-    }
-    if (guestId && adoptedRef.current !== profile.id) {
+    const legacy = readStored();
+    if (!legacy) return;
+
+    if (!profileVoiceId && adoptedRef.current !== profile.id) {
       adoptedRef.current = profile.id;
-      updateOwnProfile(profile.id, { voice_classification_id: guestId })
+      updateOwnProfile(profile.id, { voice_classification_id: legacy })
         .then(() => refreshProfile())
-        .catch((error) => console.error("[dma_songs] could not adopt guest voice part", error));
+        .catch((error) => console.error("[dma_songs] could not adopt stored voice part", error));
     }
-  }, [isMember, profile, profileVoiceId, guestId, refreshProfile]);
+    writeStored(null);
+  }, [isMember, profile, profileVoiceId, refreshProfile]);
 
   const myPartId = React.useMemo(() => {
-    const candidate = isMember ? profileVoiceId : guestId;
-    if (!candidate) return null;
-    // A part can be deactivated or deleted while a stale id sits in storage.
-    return parts.some((p) => p.id === candidate) ? candidate : null;
-  }, [isMember, profileVoiceId, guestId, parts]);
+    if (!isMember || !profileVoiceId) return null;
+    // A part can be deactivated or deleted while a stale id sits on a profile.
+    return parts.some((p) => p.id === profileVoiceId) ? profileVoiceId : null;
+  }, [isMember, profileVoiceId, parts]);
 
   const choose = useMutation({
     mutationFn: async ({ id, note }: { id: string; note?: string }) => {
-      // Guests have no profile to move and nobody to ask.
       if (!isMember || !profile) {
-        setGuestId(id);
-        writeStored(id);
-        return { requestId: null as string | null, applied: true };
+        throw new Error("Sign in to choose your voice part.");
       }
       const requestId = await requestVoiceChange(id, note);
       // The database returns null when it applied the change outright, which
@@ -117,7 +116,6 @@ export function VoicePartProvider({ children }: { children: React.ReactNode }) {
     onSuccess: async (result, variables) => {
       const part = parts.find((p) => p.id === variables.id);
       if (result.applied) {
-        writeStored(variables.id);
         await refreshProfile();
         toast.success(part ? `You're in ${part.name}` : "Voice part saved");
       } else {
@@ -161,8 +159,7 @@ export function VoicePartProvider({ children }: { children: React.ReactNode }) {
         await cancel.mutateAsync();
       },
       clear: () => {
-        if (isMember) return; // members cannot un-assign themselves
-        setGuestId(null);
+        // Members cannot un-assign themselves; that is an administrator's call.
         writeStored(null);
       },
     }),
