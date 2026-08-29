@@ -84,6 +84,15 @@ function toRow(values: AnnouncementFormOutput) {
     priority: values.priority,
     starts_at: values.startsAt,
     ends_at: values.endsAt,
+    is_event: values.isEvent,
+    event_starts_at: values.isEvent ? values.eventStartsAt : null,
+    event_ends_at: values.isEvent ? values.eventEndsAt : null,
+    call_time: values.isEvent ? values.callTime : null,
+    venue: values.isEvent ? values.venue : null,
+    address: values.isEvent ? values.address : null,
+    dress_code: values.isEvent ? values.dressCode : null,
+    what_to_bring: values.isEvent ? values.whatToBring : null,
+    collect_rsvp: values.isEvent ? values.collectRsvp : false,
   };
 }
 

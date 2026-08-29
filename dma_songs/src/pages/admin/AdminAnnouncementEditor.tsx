@@ -3,7 +3,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { transformingResolver } from "@/lib/form";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, CalendarDays, Users } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { Field } from "@/components/common/Field";
@@ -14,6 +14,7 @@ import { ErrorState } from "@/components/common/ErrorState";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -39,6 +40,15 @@ const EMPTY: AnnouncementFormValues = {
   priority: 0,
   startsAt: null,
   endsAt: null,
+  isEvent: false,
+  eventStartsAt: null,
+  eventEndsAt: null,
+  callTime: "",
+  venue: "",
+  address: "",
+  dressCode: "",
+  whatToBring: "",
+  collectRsvp: true,
 };
 
 export default function AdminAnnouncementEditor() {
@@ -71,6 +81,15 @@ export default function AdminAnnouncementEditor() {
       priority: announcement.priority,
       startsAt: announcement.starts_at,
       endsAt: announcement.ends_at,
+      isEvent: announcement.is_event,
+      eventStartsAt: announcement.event_starts_at,
+      eventEndsAt: announcement.event_ends_at,
+      callTime: announcement.call_time ?? "",
+      venue: announcement.venue ?? "",
+      address: announcement.address ?? "",
+      dressCode: announcement.dress_code ?? "",
+      whatToBring: announcement.what_to_bring ?? "",
+      collectRsvp: announcement.collect_rsvp,
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [existing.data]);
@@ -199,6 +218,15 @@ export default function AdminAnnouncementEditor() {
                   updated_by: null,
                   created_at: new Date().toISOString(),
                   updated_at: new Date().toISOString(),
+                  is_event: values.isEvent ?? false,
+                  event_starts_at: values.eventStartsAt ?? null,
+                  event_ends_at: values.eventEndsAt ?? null,
+                  call_time: values.callTime || null,
+                  venue: values.venue || null,
+                  address: values.address || null,
+                  dress_code: values.dressCode || null,
+                  what_to_bring: values.whatToBring || null,
+                  collect_rsvp: values.collectRsvp ?? true,
                   isLive: true,
                 }}
               />
@@ -242,6 +270,140 @@ export default function AdminAnnouncementEditor() {
               >
                 <Input id="priority" type="number" min={0} max={100} {...form.register("priority")} />
               </Field>
+            </CardContent>
+          </Card>
+
+          <Card className={values.isEvent ? "border-brass/40" : undefined}>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <CalendarDays className="h-5 w-5 text-brass" aria-hidden /> Event details
+              </CardTitle>
+              <CardDescription>
+                Turn this on for a concert, rehearsal or call. Members see the date, place and what
+                to wear, and can say whether they're coming.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <Label htmlFor="is-event">This is an event</Label>
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    Adds it to the events list on the home page.
+                  </p>
+                </div>
+                <Switch
+                  id="is-event"
+                  checked={values.isEvent ?? false}
+                  onCheckedChange={(checked) =>
+                    form.setValue("isEvent", checked, { shouldDirty: true, shouldValidate: true })
+                  }
+                />
+              </div>
+
+              {values.isEvent ? (
+                <div className="space-y-4 border-t border-border pt-4">
+                  <Field
+                    label="Starts"
+                    htmlFor="event-starts"
+                    error={errors.eventStartsAt?.message}
+                    required
+                  >
+                    <Input
+                      id="event-starts"
+                      type="datetime-local"
+                      value={toLocalInputValue(values.eventStartsAt)}
+                      onChange={(event) =>
+                        form.setValue("eventStartsAt", fromLocalInputValue(event.target.value), {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    />
+                  </Field>
+
+                  <Field label="Ends" htmlFor="event-ends" error={errors.eventEndsAt?.message}>
+                    <Input
+                      id="event-ends"
+                      type="datetime-local"
+                      value={toLocalInputValue(values.eventEndsAt)}
+                      onChange={(event) =>
+                        form.setValue("eventEndsAt", fromLocalInputValue(event.target.value), {
+                          shouldDirty: true,
+                          shouldValidate: true,
+                        })
+                      }
+                    />
+                  </Field>
+
+                  <Field
+                    label="Call time"
+                    htmlFor="call-time"
+                    error={errors.callTime?.message}
+                    hint="When to actually turn up, which is rarely the start time."
+                  >
+                    <Input id="call-time" placeholder="3:00 PM at the lobby" {...form.register("callTime")} />
+                  </Field>
+
+                  <Field label="Venue" htmlFor="venue" error={errors.venue?.message}>
+                    <Input id="venue" placeholder="DLL Auditorium" {...form.register("venue")} />
+                  </Field>
+
+                  <Field label="Address" htmlFor="address" error={errors.address?.message}>
+                    <Textarea id="address" rows={2} {...form.register("address")} />
+                  </Field>
+
+                  <Field
+                    label="What to wear"
+                    htmlFor="dress-code"
+                    error={errors.dressCode?.message}
+                    hint="Be specific. “Formal” means eight different things to eight people."
+                  >
+                    <Textarea
+                      id="dress-code"
+                      rows={2}
+                      placeholder="White long-sleeve polo, black slacks, black closed shoes."
+                      {...form.register("dressCode")}
+                    />
+                  </Field>
+
+                  <Field label="What to bring" htmlFor="what-to-bring" error={errors.whatToBring?.message}>
+                    <Textarea
+                      id="what-to-bring"
+                      rows={2}
+                      placeholder="Folder, water bottle, ID."
+                      {...form.register("whatToBring")}
+                    />
+                  </Field>
+
+                  <div className="flex items-start justify-between gap-4">
+                    <div>
+                      <Label htmlFor="collect-rsvp">Ask members if they're coming</Label>
+                      <p className="mt-1 text-xs text-muted-foreground">
+                        Shows going / can't go / not sure, and you get the list.
+                      </p>
+                    </div>
+                    <Switch
+                      id="collect-rsvp"
+                      checked={values.collectRsvp ?? true}
+                      onCheckedChange={(checked) =>
+                        form.setValue("collectRsvp", checked, { shouldDirty: true })
+                      }
+                    />
+                  </div>
+
+                  {isEdit ? (
+                    <Button asChild variant="outline" type="button" className="w-full">
+                      <Link to={`/admin/events/${id}`}>
+                        <Users aria-hidden /> See who's coming
+                      </Link>
+                    </Button>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      Save the event first, then you can see who has replied.
+                    </p>
+                  )}
+                </div>
+              ) : null}
             </CardContent>
           </Card>
 

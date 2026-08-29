@@ -22,13 +22,40 @@ type Command = { icon: React.ReactNode; label: string; run: () => void };
 export function RichTextEditor({ value, onChange, id, ariaLabel, error }: RichTextEditorProps) {
   const ref = React.useRef<HTMLDivElement>(null);
 
+  /**
+   * The last HTML this component sent upwards.
+   *
+   * This exists to stop the box being rewritten underneath the person typing.
+   * Every keystroke is sanitized before it reaches form state, and the
+   * sanitizer normalises as it goes — wrapping bare text in a paragraph,
+   * closing tags, escaping entities. So the value coming back down almost
+   * never matches the raw HTML in the box, and a naive `innerHTML !== value`
+   * check fires on every character, replaces the DOM, and drops the caret
+   * back to the start of the field. Comparing against what we last emitted
+   * tells external changes (loading a song to edit, a reset) apart from the
+   * echo of our own typing.
+   */
+  const lastEmitted = React.useRef<string | null>(null);
+
   React.useEffect(() => {
     const node = ref.current;
-    if (node && node.innerHTML !== value) node.innerHTML = value ?? "";
+    if (!node) return;
+
+    // Our own change coming back around: leave the DOM and the caret alone.
+    if (value === lastEmitted.current) return;
+
+    // Never overwrite the field while it has focus. A form reset landing
+    // mid-sentence would otherwise wipe what is being typed.
+    if (document.activeElement === node) return;
+
+    if (node.innerHTML !== (value ?? "")) node.innerHTML = value ?? "";
   }, [value]);
 
   const emit = React.useCallback(() => {
-    if (ref.current) onChange(sanitizeRichText(ref.current.innerHTML));
+    if (!ref.current) return;
+    const html = sanitizeRichText(ref.current.innerHTML);
+    lastEmitted.current = html;
+    onChange(html);
   }, [onChange]);
 
   const exec = React.useCallback(

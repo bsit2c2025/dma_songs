@@ -3,18 +3,22 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { Toaster } from "sonner";
 import { AuthProvider } from "@/features/auth/AuthProvider";
-import { RequireAdmin, RequireAuth } from "@/features/auth/guards";
+import { RequireAdmin, RequireApprovedMember, RequireAuth } from "@/features/auth/guards";
 import { VoicePartProvider } from "@/features/voice/VoicePartProvider";
 import { PublicLayout } from "@/components/layout/PublicLayout";
 import { AdminLayout } from "@/components/layout/AdminLayout";
 import { FullPageLoader } from "@/components/common/FullPageLoader";
 import { AppErrorBoundary } from "@/components/common/AppErrorBoundary";
 import { StorageNotice } from "@/components/common/StorageNotice";
+import { useFavicon } from "@/hooks/useFavicon";
 
-// Eager: the pages almost everyone lands on.
+// Eager: the landing page everyone sees first.
 import Home from "@/pages/Home";
-import Songs from "@/pages/Songs";
-import SongDetail from "@/pages/SongDetail";
+
+const Songs = React.lazy(() => import("@/pages/Songs"));
+const SongDetail = React.lazy(() => import("@/pages/SongDetail"));
+const PendingApproval = React.lazy(() => import("@/pages/PendingApproval"));
+const AdminEventAttendance = React.lazy(() => import("@/pages/admin/AdminEventAttendance"));
 
 // Lazy: everything else, so a guest never downloads the dashboard.
 const Announcements = React.lazy(() => import("@/pages/Announcements"));
@@ -55,6 +59,14 @@ const queryClient = new QueryClient({
   },
 });
 
+/**
+ * Side effects that need the providers above them but render nothing.
+ */
+function Chrome() {
+  useFavicon();
+  return null;
+}
+
 export default function App() {
   return (
     <AppErrorBoundary>
@@ -62,6 +74,7 @@ export default function App() {
         <BrowserRouter>
           <AuthProvider>
             <VoicePartProvider>
+              <Chrome />
               <React.Suspense fallback={<FullPageLoader />}>
                 <Routes>
                   {/* Standalone pages without the site chrome */}
@@ -70,8 +83,14 @@ export default function App() {
 
                   <Route element={<PublicLayout />}>
                     <Route index element={<Home />} />
-                    <Route path="/songs" element={<Songs />} />
-                    <Route path="/songs/:id" element={<SongDetail />} />
+                    <Route path="/pending" element={<PendingApproval />} />
+
+                    {/* The music is members-only. The database enforces it;
+                        this just redirects rather than showing an empty page. */}
+                    <Route element={<RequireApprovedMember />}>
+                      <Route path="/songs" element={<Songs />} />
+                      <Route path="/songs/:id" element={<SongDetail />} />
+                    </Route>
                     <Route path="/announcements" element={<Announcements />} />
                     <Route path="/login" element={<Login />} />
                     <Route path="/reset-password" element={<ResetPassword />} />
@@ -98,6 +117,7 @@ export default function App() {
                       <Route path="announcements/:id/edit" element={<AdminAnnouncementEditor />} />
                       <Route path="users" element={<AdminUsers />} />
                       <Route path="voice-requests" element={<AdminVoiceRequests />} />
+                      <Route path="events/:id" element={<AdminEventAttendance />} />
                       <Route path="voice-classifications" element={<AdminVoiceClassifications />} />
                       <Route path="settings" element={<AdminSettings />} />
                       <Route path="activity" element={<AdminActivity />} />

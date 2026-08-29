@@ -30,3 +30,29 @@ export function RequireAdmin() {
   if (!isAdmin) return <Navigate to="/unauthorized" replace />;
   return <Outlet />;
 }
+
+
+/**
+ * The music itself is members-only, and the account has to have been approved.
+ *
+ * This is a redirect, not the protection: the database policies added in 0010
+ * are what actually stop a signed-out request to the REST API returning songs.
+ * What this does is give the person a page that explains itself instead of an
+ * empty list.
+ */
+export function RequireApprovedMember() {
+  const { status, profile } = useAuth();
+  const location = useLocation();
+
+  if (status === "loading") return <FullPageLoader />;
+
+  if (status !== "authenticated") {
+    return <Navigate to="/login" state={{ from: location.pathname }} replace />;
+  }
+
+  if (!profile?.approved_at) {
+    return <Navigate to="/pending" replace />;
+  }
+
+  return <Outlet />;
+}

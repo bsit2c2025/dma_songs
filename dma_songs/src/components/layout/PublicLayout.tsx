@@ -26,6 +26,24 @@ export function PublicLayout() {
 
   React.useEffect(() => setMenuOpen(false), [location.pathname]);
 
+  // While the panel is open the page behind it must not scroll, or a swipe
+  // moves the wrong thing — the classic mobile drawer annoyance.
+  React.useEffect(() => {
+    if (!menuOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setMenuOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [menuOpen]);
+
   const contactEmail = settingString(settings, "app.contact_email", "");
 
   return (
@@ -95,9 +113,43 @@ export function PublicLayout() {
           </div>
         </div>
 
-        {menuOpen ? (
-          <nav id="mobile-nav" className="border-t border-border bg-card md:hidden" aria-label="Mobile">
-            <ul className="container flex flex-col py-2">
+      </header>
+
+      {/*
+        A slide-in panel rather than a dropdown inside the header.
+
+        The dropdown grew the sticky header itself, so on a short Android
+        viewport — where Chrome's URL bar eats another 56px — the last items
+        fell off the bottom with nothing to scroll. This is fixed to the
+        viewport, sized in dvh so it tracks the URL bar as it hides, and
+        scrolls internally when the list is longer than the screen.
+      */}
+      {menuOpen ? (
+        <>
+          <button
+            type="button"
+            className="fixed inset-0 z-40 bg-ink/50 backdrop-blur-[2px] md:hidden"
+            onClick={() => setMenuOpen(false)}
+            aria-label="Close the menu"
+          />
+          <nav
+            id="mobile-nav"
+            aria-label="Mobile"
+            className="fixed inset-y-0 right-0 z-50 flex h-[100dvh] w-[86%] max-w-xs flex-col border-l border-border bg-card shadow-2xl md:hidden"
+          >
+            <div className="flex h-16 shrink-0 items-center justify-between border-b border-border px-4">
+              <Logo />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setMenuOpen(false)}
+                aria-label="Close the menu"
+              >
+                <X />
+              </Button>
+            </div>
+
+            <ul className="flex-1 overflow-y-auto overscroll-contain p-3">
               {NAV.map((item) => (
                 <li key={item.to}>
                   <NavLink
@@ -105,37 +157,64 @@ export function PublicLayout() {
                     end={item.end}
                     className={({ isActive }) =>
                       cn(
-                        "flex items-center gap-3 rounded-md px-2 py-3 text-sm font-semibold",
-                        isActive ? "text-primary" : "text-foreground",
+                        // 48px minimum: a comfortable tap target on a phone.
+                        "flex min-h-12 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold",
+                        isActive ? "bg-secondary text-secondary-foreground" : "text-foreground hover:bg-accent",
                       )
                     }
                   >
-                    <item.icon className="h-4 w-4" aria-hidden />
+                    <item.icon className="h-5 w-5 shrink-0" aria-hidden />
                     {item.label}
                   </NavLink>
                 </li>
               ))}
+
+              <li className="my-2 border-t border-border" />
+
               <li>
                 <NavLink
                   to={status === "authenticated" ? "/profile" : "/login"}
-                  className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-semibold"
+                  className="flex min-h-12 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold hover:bg-accent"
                 >
-                  <UserRound className="h-4 w-4" aria-hidden />
+                  <UserRound className="h-5 w-5 shrink-0" aria-hidden />
                   {status === "authenticated" ? "Your profile" : "Sign in"}
                 </NavLink>
               </li>
+
               {isAdmin ? (
                 <li>
-                  <NavLink to="/admin" className="flex items-center gap-3 rounded-md px-2 py-3 text-sm font-semibold">
-                    <ShieldCheck className="h-4 w-4" aria-hidden />
+                  <NavLink
+                    to="/admin"
+                    className="flex min-h-12 items-center gap-3 rounded-md px-3 py-3 text-base font-semibold hover:bg-accent"
+                  >
+                    <ShieldCheck className="h-5 w-5 shrink-0" aria-hidden />
                     Dashboard
                   </NavLink>
                 </li>
               ) : null}
+
+              {myPart ? (
+                <li className="px-3 py-3">
+                  <p className="mb-1.5 font-mono text-[0.65rem] uppercase tracking-[0.14em] text-muted-foreground">
+                    Your voice part
+                  </p>
+                  <VoicePartChip part={myPart} size="md" />
+                </li>
+              ) : null}
             </ul>
+
+            {/* Padded for the Android gesture bar. */}
+            <div className="shrink-0 border-t border-border p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+              <div className="flex flex-wrap gap-3 text-xs text-muted-foreground">
+                <Link to="/privacy">Privacy</Link>
+                <Link to="/terms">Terms</Link>
+                <Link to="/copyright">Copyright</Link>
+              </div>
+            </div>
           </nav>
-        ) : null}
-      </header>
+        </>
+      ) : null}
+
 
       <main id="main" className="container flex-1 py-8">
         <Outlet />

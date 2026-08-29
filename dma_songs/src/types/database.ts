@@ -13,6 +13,7 @@
 export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[];
 
 export type AppRole = "admin" | "singer";
+export type AttendanceStatus = "going" | "not_going" | "maybe";
 export type VoiceFamily = "soprano" | "alto" | "tenor" | "bass";
 export type SongPartMode = "simple" | "detailed";
 export type VoiceRequestStatus = "pending" | "approved" | "rejected" | "cancelled";
@@ -60,6 +61,10 @@ export interface Database {
           terms_accepted_at: string | null;
           terms_version: string | null;
           anonymized_at: string | null;
+          approved_at: string | null;
+          approved_by: string | null;
+          rejected_at: string | null;
+          approval_note: string | null;
           last_seen_at: string | null;
           created_at: string;
           updated_at: string;
@@ -168,6 +173,15 @@ export interface Database {
           link_label: string | null;
           is_published: boolean;
           is_pinned: boolean;
+          is_event: boolean;
+          event_starts_at: string | null;
+          event_ends_at: string | null;
+          call_time: string | null;
+          venue: string | null;
+          address: string | null;
+          dress_code: string | null;
+          what_to_bring: string | null;
+          collect_rsvp: boolean;
           priority: number;
           starts_at: string | null;
           ends_at: string | null;
@@ -185,6 +199,15 @@ export interface Database {
           link_label?: string | null;
           is_published?: boolean;
           is_pinned?: boolean;
+          is_event?: boolean;
+          event_starts_at?: string | null;
+          event_ends_at?: string | null;
+          call_time?: string | null;
+          venue?: string | null;
+          address?: string | null;
+          dress_code?: string | null;
+          what_to_bring?: string | null;
+          collect_rsvp?: boolean;
           priority?: number;
           starts_at?: string | null;
           ends_at?: string | null;
@@ -224,6 +247,29 @@ export interface Database {
           updated_by?: string | null;
         };
         Update: { note?: string; updated_by?: string | null };
+        Relationships: [];
+      };
+      super_admins: {
+        Row: { user_id: string; note: string | null; created_at: string };
+        Insert: never;
+        Update: never;
+        Relationships: [];
+      };
+      event_attendance: {
+        Row: {
+          announcement_id: string;
+          user_id: string;
+          status: AttendanceStatus;
+          note: string | null;
+          updated_at: string;
+        };
+        Insert: {
+          announcement_id: string;
+          user_id: string;
+          status: AttendanceStatus;
+          note?: string | null;
+        };
+        Update: { status?: AttendanceStatus; note?: string | null };
         Relationships: [];
       };
       activity_logs: {
@@ -280,6 +326,13 @@ export interface Database {
         Returns: void;
       };
       pending_voice_request_count: { Args: Record<string, never>; Returns: number };
+      pending_member_count: { Args: Record<string, never>; Returns: number };
+      admin_set_member_approval: {
+        Args: { p_user_id: string; p_approve: boolean; p_note?: string | null };
+        Returns: void;
+      };
+      event_attendance_summary: { Args: { p_announcement_id: string }; Returns: Json };
+      is_superadmin: { Args: { uid?: string }; Returns: boolean };
     };
     Enums: {
       app_role: AppRole;
@@ -287,6 +340,7 @@ export interface Database {
       voice_request_status: VoiceRequestStatus;
       voice_family: VoiceFamily;
       song_part_mode: SongPartMode;
+      attendance_status: AttendanceStatus;
     };
     CompositeTypes: Record<string, never>;
   };

@@ -16,6 +16,8 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const ADMIN_PAGE_SIZE = 20;
 
 export const ACTIVITY_LABELS: Record<string, string> = {
+  "user.approved": "Member approved",
+  "user.rejected": "Member request declined",
   "song.bulk_set_category": "Songs recategorised in bulk",
   "song.bulk_enable": "Songs enabled in bulk",
   "song.bulk_disable": "Songs disabled in bulk",

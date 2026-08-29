@@ -112,6 +112,7 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0007_grants.sql` | Table privileges for the `anon` and `authenticated` roles |
 | `0008_voice_change_requests.sql` | Admin-approved voice part changes |
 | `0009_privacy_families_bulk.sql` | SATB voices, bulk song actions, member admin, privacy fields |
+| `0010_events_membership.sql` | Super admins, member approval, members-only music, events |
 
 Each file is safe to re-run.
 
@@ -179,6 +180,28 @@ From then on, use **Admin → Members → Make administrator**. The database ref
 remaining administrator, so you cannot lock yourself out.
 
 ---
+
+## Super administrators
+
+An ordinary administrator can promote and demote other administrators. A **super administrator**
+can't be demoted or deactivated by them.
+
+Run `supabase/seed/05_create_super_admin.sql` with your email. There is no way to grant this from
+inside the app: `public.super_admins` has no INSERT, UPDATE or DELETE policy at all, so the SQL
+editor is the only door — the same reasoning as the first-admin script.
+
+**Create at least two.** The protection is worth nothing if the single protected account is the one
+that loses its password.
+
+## Who can see the music
+
+Songs, videos and lyrics are for approved members. A signed-out visitor gets the landing page,
+announcements and events — enough to make somebody want to join — and nothing else. Signing up
+creates an account in a **pending** state; an administrator approves it from Admin → Members, where a
+badge shows how many are waiting.
+
+This is enforced by row-level policies, not by hidden links: a signed-out request to the REST API for
+songs returns nothing. Anyone already in the system when `0010` runs keeps their access.
 
 ## Environment variables
 

@@ -13,6 +13,7 @@ import { useAuth } from "@/features/auth/AuthProvider";
 import { signOut } from "@/services/auth";
 import { logAdminEvent } from "@/services/activity";
 import { pendingVoiceRequestCount } from "@/services/voiceRequests";
+import { pendingMemberCount } from "@/services/membership";
 import { queryKeys } from "@/lib/queryKeys";
 import { cn, initials } from "@/lib/utils";
 import { toast } from "sonner";
@@ -32,7 +33,7 @@ const SECTIONS = [
   {
     label: "People",
     items: [
-      { to: "/admin/users", label: "Members", icon: Users, end: false },
+      { to: "/admin/users", label: "Members", icon: Users, end: false, badge: "pendingMembers" as const },
       {
         to: "/admin/voice-requests",
         label: "Voice requests",
@@ -63,6 +64,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
   });
   const pendingCount = pending.data ?? 0;
 
+  const pendingMembers = useQuery({
+    queryKey: ["admin", "pending-member-count"],
+    queryFn: pendingMemberCount,
+    refetchInterval: 30_000,
+    staleTime: 20_000,
+  });
+  const pendingMemberTotal = pendingMembers.data ?? 0;
+
   return (
     <nav className="flex flex-col gap-6 p-4" aria-label="Dashboard">
       {SECTIONS.map((section, index) => (
@@ -89,6 +98,14 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
             >
               <item.icon className="h-4 w-4 shrink-0" aria-hidden />
               <span className="flex-1">{item.label}</span>
+              {"badge" in item && item.badge === "pendingMembers" && pendingMemberTotal > 0 ? (
+                <span
+                  className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brass px-1.5 text-[0.7rem] font-bold text-brass-foreground"
+                  aria-label={`${pendingMemberTotal} waiting for approval`}
+                >
+                  {pendingMemberTotal > 99 ? "99+" : pendingMemberTotal}
+                </span>
+              ) : null}
               {"badge" in item && item.badge === "voiceRequests" && pendingCount > 0 ? (
                 <span
                   className="ml-auto inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full bg-brass px-1.5 text-[0.7rem] font-bold text-brass-foreground"
@@ -108,6 +125,21 @@ function SidebarNav({ onNavigate }: { onNavigate?: () => void }) {
 export function AdminLayout() {
   const { profile, user } = useAuth();
   const [drawerOpen, setDrawerOpen] = React.useState(false);
+
+  // Stop the dashboard scrolling behind the drawer on a phone.
+  React.useEffect(() => {
+    if (!drawerOpen) return;
+    const previous = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDrawerOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.body.style.overflow = previous;
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [drawerOpen]);
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -176,21 +208,21 @@ export function AdminLayout() {
         </header>
 
         {drawerOpen ? (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 h-[100dvh] lg:hidden">
             <button
               type="button"
               className="absolute inset-0 bg-foreground/40"
               onClick={() => setDrawerOpen(false)}
               aria-label="Close menu"
             />
-            <div className="absolute inset-y-0 right-0 flex w-72 flex-col bg-card shadow-xl">
+            <div className="absolute inset-y-0 right-0 flex w-[86%] max-w-xs flex-col bg-card shadow-xl">
               <div className="flex items-center justify-between border-b border-border p-4">
                 <Logo to="/admin" size="sm" showWordmark={false} />
                 <Button variant="ghost" size="icon" onClick={() => setDrawerOpen(false)} aria-label="Close menu">
                   <X />
                 </Button>
               </div>
-              <div className="flex-1 overflow-y-auto">
+              <div className="flex-1 overflow-y-auto overscroll-contain pb-[env(safe-area-inset-bottom)]">
                 <SidebarNav onNavigate={() => setDrawerOpen(false)} />
                 <Separator />
                 <div className="space-y-1 p-4">

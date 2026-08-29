@@ -1,6 +1,6 @@
 import * as React from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { Settings2, ShieldCheck, ShieldOff, UserRound, Users } from "lucide-react";
+import { Check, Lock, Settings2, ShieldCheck, ShieldOff, UserRound, Users, X } from "lucide-react";
 import { toast } from "sonner";
 import { PageHeader } from "@/components/common/PageHeader";
 import { SearchInput } from "@/components/common/SearchInput";
@@ -24,6 +24,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue,
 } from "@/components/ui/select";
 import { listMembers, setAdminRole, setMemberActive, setMemberVoiceClassification } from "@/services/members";
+import { listPendingMembers, listSuperAdminIds, setMemberApproval } from "@/services/membership";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/features/auth/AuthProvider";
@@ -47,6 +48,21 @@ export default function AdminUsers() {
   const [page, setPage] = React.useState(1);
   const [pendingAdmin, setPendingAdmin] = React.useState<{ member: MemberSummary; grant: boolean } | null>(null);
   const [managing, setManaging] = React.useState<MemberSummary | null>(null);
+
+  const pending = useQuery({ queryKey: ["admin", "pending-members"], queryFn: listPendingMembers });
+  const superAdmins = useQuery({ queryKey: ["admin", "super-admins"], queryFn: listSuperAdminIds });
+  const protectedIds = new Set(superAdmins.data ?? []);
+
+  const approve = useMutation({
+    mutationFn: ({ id, ok }: { id: string; ok: boolean }) => setMemberApproval(id, ok),
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ["admin", "pending-members"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "members"] });
+      queryClient.invalidateQueries({ queryKey: ["admin", "pending-member-count"] });
+      toast.success(variables.ok ? "Member approved" : "Request declined");
+    },
+    onError: (error) => toast.error(errorMessage(error, "That didn't save.")),
+  });
 
   const parts = useVoiceClassifications(true);
   const params = {
@@ -96,6 +112,7 @@ export default function AdminUsers() {
   });
 
   const rows = query.data?.rows ?? [];
+  const amSuperAdmin = protectedIds.has(user?.id ?? "");
 
   return (
     <div className="space-y-6">
@@ -104,6 +121,53 @@ export default function AdminUsers() {
         title="Members"
         description="Everyone with an account. Passwords are never stored or shown here — authentication is handled by Supabase."
       />
+
+      {pending.data?.length ? (
+        <Card className="border-brass/50">
+          <CardContent className="space-y-3 p-5">
+            <h2 className="font-mono text-xs uppercase tracking-[0.16em] text-brass">
+              Waiting for approval — {pending.data.length}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              These accounts have signed up but can't reach the music yet.
+            </p>
+            {pending.data.map((person) => (
+              <div
+                key={person.id}
+                className="flex flex-wrap items-center gap-3 rounded-md border border-border p-3"
+              >
+                <Avatar className="h-9 w-9">
+                  {person.avatar_url ? <AvatarImage src={person.avatar_url} alt="" /> : null}
+                  <AvatarFallback>{initials(person.display_name)}</AvatarFallback>
+                </Avatar>
+                <div className="min-w-0 flex-1">
+                  <p className="truncate font-semibold">{person.display_name || "New member"}</p>
+                  <p className="truncate text-xs text-muted-foreground">
+                    {person.email} · signed up {formatDate(person.created_at)}
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={approve.isPending}
+                    onClick={() => approve.mutate({ id: person.id, ok: true })}
+                  >
+                    <Check aria-hidden /> Approve
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={approve.isPending}
+                    onClick={() => approve.mutate({ id: person.id, ok: false })}
+                  >
+                    <X aria-hidden /> Decline
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      ) : null}
 
       <div className="flex flex-col gap-3 sm:flex-row">
         <SearchInput
@@ -181,6 +245,11 @@ export default function AdminUsers() {
                               {isAdminMember ? (
                                 <Badge className="bg-brass text-brass-foreground">Admin</Badge>
                               ) : null}
+                              {protectedIds.has(member.id) ? (
+                                <Badge variant="secondary" title="Protected account">
+                                  <Lock className="h-3 w-3" aria-hidden /> Protected
+                                </Badge>
+                              ) : null}
                             </p>
                             <p className="truncate text-xs text-muted-foreground">{member.email}</p>
                           </div>
@@ -236,7 +305,7 @@ export default function AdminUsers() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              disabled={isSelf}
+                              disabled={isSelf || (protectedIds.has(member.id) && !amSuperAdmin)}
                               onSelect={() =>
                                 changeActive.mutate({ id: member.id, active: !member.is_active })
                               }
@@ -245,7 +314,7 @@ export default function AdminUsers() {
                             </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem
-                              disabled={isSelf}
+                              disabled={isSelf || (protectedIds.has(member.id) && !amSuperAdmin)}
                               destructive={isAdminMember}
                               onSelect={() => setPendingAdmin({ member, grant: !isAdminMember })}
                             >
