@@ -19,6 +19,7 @@ const Songs = React.lazy(() => import("@/pages/Songs"));
 const SongDetail = React.lazy(() => import("@/pages/SongDetail"));
 const PendingApproval = React.lazy(() => import("@/pages/PendingApproval"));
 const Deactivated = React.lazy(() => import("@/pages/Deactivated"));
+const Welcome = React.lazy(() => import("@/pages/Welcome"));
 const AdminEvents = React.lazy(() => import("@/pages/admin/AdminEvents"));
 const AdminEventAttendance = React.lazy(() => import("@/pages/admin/AdminEventAttendance"));
 
@@ -87,6 +88,7 @@ export default function App() {
                     <Route index element={<Home />} />
                     <Route path="/pending" element={<PendingApproval />} />
                     <Route path="/deactivated" element={<Deactivated />} />
+                    <Route path="/welcome" element={<Welcome />} />
 
                     {/* The music is members-only. The database enforces it;
                         this just redirects rather than showing an empty page. */}

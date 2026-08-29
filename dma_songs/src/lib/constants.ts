@@ -16,6 +16,8 @@ export const DEFAULT_PAGE_SIZE = 12;
 export const ADMIN_PAGE_SIZE = 20;
 
 export const ACTIVITY_LABELS: Record<string, string> = {
+  "user.onboarded": "Member completed the welcome flow",
+  "user.voice_assigned": "Voice part assigned by an administrator",
   "event.attendance_set": "Attendance recorded by an administrator",
   "user.approved": "Member approved",
   "user.rejected": "Member request declined",

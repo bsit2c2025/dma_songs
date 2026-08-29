@@ -63,6 +63,9 @@ export interface Database {
           anonymized_at: string | null;
           approved_at: string | null;
           deactivated_at: string | null;
+          onboarded_at: string | null;
+          preferred_family: VoiceFamily | null;
+          needs_voice_assignment: boolean;
           deactivated_by: string | null;
           deactivation_reason: string | null;
           approved_by: string | null;
@@ -391,6 +394,19 @@ export interface Database {
       };
       event_attendance_summary: { Args: { p_announcement_id: string }; Returns: Json };
       is_superadmin: { Args: { uid?: string }; Returns: boolean };
+      complete_onboarding: {
+        Args: {
+          p_display_name?: string | null;
+          p_family?: VoiceFamily | null;
+          p_unsure?: boolean;
+        };
+        Returns: void;
+      };
+      admin_assign_voice_part: {
+        Args: { p_user_id: string; p_voice_classification_id: string };
+        Returns: void;
+      };
+      awaiting_voice_assignment_count: { Args: Record<string, never>; Returns: number };
     };
     Enums: {
       app_role: AppRole;

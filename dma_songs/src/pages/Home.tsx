@@ -30,6 +30,8 @@ export default function Home() {
 
   const isMember = status === "authenticated";
   const isApproved = Boolean(profile?.approved_at);
+  // Somebody who has signed in but never answered the welcome questions.
+  const needsWelcome = isMember && profile && !profile.onboarded_at && !profile.voice_classification_id;
   const firstName = profile?.display_name?.split(" ")[0];
 
   // Only events still to come belong on a page meant to make somebody want to
@@ -56,7 +58,13 @@ export default function Home() {
           </p>
 
           <div className="mt-6 flex flex-wrap gap-3">
-            {isMember && isApproved ? (
+            {needsWelcome ? (
+              <Button asChild size="lg">
+                <Link to="/welcome">
+                  Finish setting up <ArrowRight aria-hidden />
+                </Link>
+              </Button>
+            ) : isMember && isApproved ? (
               <Button asChild size="lg">
                 <Link to="/songs">
                   <Music4 aria-hidden /> Open the library
@@ -171,7 +179,7 @@ export default function Home() {
         )}
       </section>
 
-      {isMember && isApproved ? (
+      {isMember && isApproved && !needsWelcome ? (
         <section aria-labelledby="voice-heading">
           <PageHeader
             eyebrow="Your section"

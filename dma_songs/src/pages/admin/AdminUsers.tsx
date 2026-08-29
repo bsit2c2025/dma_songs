@@ -30,13 +30,14 @@ import {
 } from "@/components/ui/select";
 import { listMembers, setAdminRole, setMemberActive, setMemberVoiceClassification } from "@/services/members";
 import { listPendingMembers, listSuperAdminIds, setMemberApproval } from "@/services/membership";
+import { adminAssignVoicePart } from "@/services/onboarding";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
 import { useDebouncedValue } from "@/hooks/useDebouncedValue";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { queryKeys } from "@/lib/queryKeys";
 import { ADMIN_PAGE_SIZE } from "@/lib/constants";
 import { errorMessage } from "@/lib/errors";
-import { formatDate, initials } from "@/lib/utils";
+import { cn, formatDate, initials } from "@/lib/utils";
 import { useDocumentTitle } from "@/hooks/useDocumentTitle";
 import type { MemberSummary } from "@/types/models";
 
@@ -89,7 +90,11 @@ export default function AdminUsers() {
 
   const changeVoice = useMutation({
     mutationFn: ({ id, voiceId }: { id: string; voiceId: string | null }) =>
-      setMemberVoiceClassification(id, voiceId),
+      voiceId
+        // Goes through the RPC so "waiting for a voice part" is cleared at the
+        // same time; a bare column update would leave them in the queue.
+        ? adminAssignVoicePart(id, voiceId)
+        : setMemberVoiceClassification(id, null),
     onSuccess: () => {
       invalidate();
       toast.success("Voice part updated");
@@ -256,6 +261,11 @@ export default function AdminUsers() {
                               {isAdminMember ? (
                                 <Badge className="bg-brass text-brass-foreground">Admin</Badge>
                               ) : null}
+                              {member.needs_voice_assignment ? (
+                                <Badge variant="warning" title="Asked the director to place them">
+                                  Needs a part
+                                </Badge>
+                              ) : null}
                               {protectedIds.has(member.id) ? (
                                 <Badge variant="secondary" title="Protected account">
                                   <Lock className="h-3 w-3" aria-hidden /> Protected
@@ -274,7 +284,10 @@ export default function AdminUsers() {
                           }
                         >
                           <SelectTrigger
-                            className="h-9 w-44"
+                            className={cn(
+                              "h-9 w-44",
+                              member.needs_voice_assignment && "border-brass",
+                            )}
                             aria-label={`Voice part for ${member.display_name || member.email}`}
                           >
                             <SelectValue placeholder="Not set" />

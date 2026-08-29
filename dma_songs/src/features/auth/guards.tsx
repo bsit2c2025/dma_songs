@@ -60,5 +60,11 @@ export function RequireApprovedMember() {
     return <Navigate to="/pending" replace />;
   }
 
+  // A member who has never been through the welcome flow is asked once, here,
+  // rather than being silently assigned something on their behalf.
+  if (!profile.onboarded_at && !profile.voice_classification_id) {
+    return <Navigate to="/welcome" replace />;
+  }
+
   return <Outlet />;
 }

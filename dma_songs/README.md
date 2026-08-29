@@ -114,6 +114,7 @@ Open **SQL Editor** in the Supabase dashboard and run these files **in order**, 
 | `0009_privacy_families_bulk.sql` | SATB voices, bulk song actions, member admin, privacy fields |
 | `0010_events_membership.sql` | Super admins, member approval, members-only music, events |
 | `0011_event_manager.sql` | Deactivation reasons, admin-managed attendance, event guests |
+| `0012_onboarding.sql` | First-run welcome flow, and cleanup of parts nobody chose |
 
 Each file is safe to re-run.
 
@@ -361,6 +362,19 @@ administrators still can, and that is checked in the database rather than by a d
 **Deactivating a member.** A reason is required, and the member is shown it on a page of their own
 rather than finding the library silently closed. Reactivating clears the reason; the activity log
 keeps the history.
+
+**A new member's first sign-in.** They are asked two questions once: their name, and which voice
+they sing — Soprano, Alto, Tenor or Bass, or **"I'm not sure — let the director decide."** The four
+plain voices are what somebody who has never been auditioned can actually answer; Soprano 1 versus
+Soprano 2 is a judgement for whoever hears them sing.
+
+Choosing a voice assigns the first divided part of it as a starting point. Choosing "not sure" leaves
+the part unset and puts them on a list — Admin → Members marks them **Needs a part**, and setting one
+from the dropdown there clears the flag.
+
+Nothing is ever assigned on a member's behalf without them being asked. `0012` also contains a review
+query for accounts that were silently assigned by an earlier bug; run the SELECT, read the list, and
+uncomment the UPDATE if you want those members to get their first choice back.
 
 **Voice part changes.** A member's *first* choice applies immediately — nothing to approve. Any move
 afterwards becomes a request that waits in Admin → Voice requests, where the sidebar carries a count

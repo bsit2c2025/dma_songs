@@ -4,7 +4,6 @@ import { toast } from "sonner";
 import { STORAGE_KEYS } from "@/lib/constants";
 import { useAuth } from "@/features/auth/AuthProvider";
 import { useVoiceClassifications } from "@/hooks/useVoiceClassifications";
-import { updateOwnProfile } from "@/services/members";
 import {
   cancelVoiceChangeRequest,
   getMyPendingRequest,
@@ -35,14 +34,6 @@ interface VoicePartState {
 
 const VoicePartContext = React.createContext<VoicePartState | null>(null);
 
-function readStored(): string | null {
-  try {
-    return window.localStorage.getItem(STORAGE_KEYS.voicePart);
-  } catch {
-    return null;
-  }
-}
-
 function writeStored(id: string | null) {
   try {
     if (id) window.localStorage.setItem(STORAGE_KEYS.voicePart, id);
@@ -69,7 +60,6 @@ export function VoicePartProvider({ children }: { children: React.ReactNode }) {
   const { data: parts = [], isLoading } = useVoiceClassifications();
   const { profile, status, refreshProfile } = useAuth();
   const queryClient = useQueryClient();
-  const adoptedRef = React.useRef<string | null>(null);
 
   const profileVoiceId = profile?.voice_classification_id ?? null;
   const isMember = status === "authenticated" && Boolean(profile);
@@ -81,21 +71,20 @@ export function VoicePartProvider({ children }: { children: React.ReactNode }) {
     staleTime: 15_000,
   });
 
-  // One-time cleanup: adopt anything a guest chose under the old behaviour,
-  // then stop keeping it. After this runs once per browser the key is gone.
+  /**
+   * Clear any leftover guest selection. It is only ever removed, never read.
+   *
+   * An earlier version of this effect adopted the stored value onto the
+   * profile so a guest's choice would not be lost when they signed up. That
+   * was a mistake: it could not tell a choice just made from a stale key left
+   * in the browser, so a new account signing in on a machine somebody else had
+   * used inherited their part silently — spending the member's one free choice
+   * on a decision they never made. Guests cannot pick a part at all now, so
+   * there is nothing legitimate left to adopt.
+   */
   React.useEffect(() => {
-    if (!isMember || !profile) return;
-    const legacy = readStored();
-    if (!legacy) return;
-
-    if (!profileVoiceId && adoptedRef.current !== profile.id) {
-      adoptedRef.current = profile.id;
-      updateOwnProfile(profile.id, { voice_classification_id: legacy })
-        .then(() => refreshProfile())
-        .catch((error) => console.error("[dma_songs] could not adopt stored voice part", error));
-    }
     writeStored(null);
-  }, [isMember, profile, profileVoiceId, refreshProfile]);
+  }, []);
 
   const myPartId = React.useMemo(() => {
     if (!isMember || !profileVoiceId) return null;
